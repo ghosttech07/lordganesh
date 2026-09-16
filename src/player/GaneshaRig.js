@@ -298,17 +298,12 @@ export class GaneshaRig {
 /** Load `/models/ganesha.glb`; resolves null (not an error) if it's absent. */
 export async function loadGaneshaGLB(url = 'models/ganesha.glb') {
   try {
-    const head = await fetch(url, { method: 'HEAD' });
-    if (!head.ok || !(head.headers.get('content-type') || '').includes('model')) {
-      // Vite dev serves index.html for unknown paths — require a model MIME type.
-      if (!head.ok) return null;
-      const ct = head.headers.get('content-type') || '';
-      if (ct.includes('text/html')) return null;
-    }
     const loader = new GLTFLoader();
     const draco = new DRACOLoader();
     draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
     loader.setDRACOLoader(draco);
+    // A missing file (or a dev server answering with index.html) fails to parse
+    // and lands in the catch → procedural Ganesha. No pre-flight request needed.
     const gltf = await loader.loadAsync(url);
     return gltf.scene;
   } catch (e) {

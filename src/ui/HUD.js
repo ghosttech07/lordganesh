@@ -9,6 +9,9 @@ import { damp } from '../core/MathUtils.js';
 
 const _v = new THREE.Vector3();
 const _cc = [0, 0];
+const _dist = new Float32Array(MODAK_COUNT);
+const _order = new Int32Array(MODAK_COUNT);
+const MAX_INDICATORS = 4;
 
 function el(tag, cls, parent, text) {
   const e = document.createElement(tag);
@@ -252,10 +255,27 @@ export class HUD {
     const w = window.innerWidth;
     const h = window.innerHeight;
     const margin = 44;
+    // Rank modaks by distance; only the nearest MAX_INDICATORS get a screen
+    // marker (all of them are still on the compass and minimap).
     for (let i = 0; i < MODAK_COUNT; i++) {
+      const m = modaks.modaks[i];
+      _dist[i] = m.active ? Math.hypot(m.x - pose.x, m.z - pose.z) : Infinity;
+      _order[i] = i;
+    }
+    for (let i = 1; i < MODAK_COUNT; i++) {
+      const k = _order[i];
+      let j = i - 1;
+      while (j >= 0 && _dist[_order[j]] > _dist[k]) {
+        _order[j + 1] = _order[j];
+        j--;
+      }
+      _order[j + 1] = k;
+    }
+    for (let r = 0; r < MODAK_COUNT; r++) {
+      const i = _order[r];
       const ind = this.indicators[i];
       const m = modaks.modaks[i];
-      if (!m.active) {
+      if (!m.active || r >= MAX_INDICATORS) {
         if (ind.shown) {
           ind.el.classList.add('hidden');
           ind.shown = false;
@@ -405,16 +425,17 @@ export class HUD {
     const scale = S / (CHUNK_SIZE * 7); // ~7 chunks across
     const cx = S / 2;
     const cy = S / 2;
+    // Heading-up: rotate the world so the player's forward points to the top.
+    const theta = pose.yaw + Math.PI;
     ctx.save();
     ctx.translate(cx, cy);
+    ctx.rotate(theta);
     // Explored chunks.
     ctx.fillStyle = 'rgba(242,193,78,0.16)';
     for (const key of world.explored) {
       chunkKeyToCoords(key, _cc);
-      const ex = _cc[0];
-      const ez = _cc[1];
-      const x = (ex * CHUNK_SIZE - pose.x) * scale;
-      const y = (ez * CHUNK_SIZE - pose.z) * scale;
+      const x = (_cc[0] * CHUNK_SIZE - pose.x) * scale;
+      const y = (_cc[1] * CHUNK_SIZE - pose.z) * scale;
       ctx.fillRect(x, y, CHUNK_SIZE * scale - 1, CHUNK_SIZE * scale - 1);
     }
     // Loaded chunks outline.
@@ -424,31 +445,55 @@ export class HUD {
       const y = (c.originZ - pose.z) * scale;
       ctx.strokeRect(x, y, CHUNK_SIZE * scale, CHUNK_SIZE * scale);
     }
-    // Modaks.
+    // Modaks (open = filled, hidden = ring); off-map ones clamp to the rim.
     for (let i = 0; i < MODAK_COUNT; i++) {
       const m = modaks.modaks[i];
       if (!m.active) continue;
-      const x = (m.x - pose.x) * scale;
-      const y = (m.z - pose.z) * scale;
-      if (x * x + y * y > (S / 2 - 6) * (S / 2 - 6)) {
-        // Clamp to rim.
-        const l = Math.hypot(x, y);
-        ctx.fillStyle = 'rgba(242,193,78,0.6)';
-        ctx.beginPath();
-        ctx.arc((x / l) * (S / 2 - 8), (y / l) * (S / 2 - 8), 3, 0, Math.PI * 2);
-        ctx.fill();
-        continue;
+      let x = (m.x - pose.x) * scale;
+      let y = (m.z - pose.z) * scale;
+      const l = Math.hypot(x, y);
+      const rim = S / 2 - 8;
+      if (l > rim) {
+        x = (x / l) * rim;
+        y = (y / l) * rim;
       }
-      ctx.fillStyle = '#ffd76a';
-      ctx.shadowColor = '#ffb347';
-      ctx.shadowBlur = 8;
       ctx.beginPath();
-      ctx.arc(x, y, 4, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.shadowBlur = 0;
+      ctx.arc(x, y, l > rim ? 3 : 4, 0, Math.PI * 2);
+      if (m.hidden) {
+        ctx.strokeStyle = '#ffd76a';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = l > rim ? 'rgba(242,193,78,0.6)' : '#ffd76a';
+        ctx.shadowColor = '#ffb347';
+        ctx.shadowBlur = l > rim ? 0 : 8;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
     }
-    // Player arrow (heading).
-    ctx.rotate(Math.PI - pose.yaw); // canvas +y is world +z; heading (sin yaw, cos yaw)
+    // Kailash marker.
+    {
+      let x = (KAILASH.x - pose.x) * scale;
+      let y = (KAILASH.z - pose.z) * scale;
+      const l = Math.hypot(x, y);
+      const rim = S / 2 - 10;
+      if (l > rim) {
+        x = (x / l) * rim;
+        y = (y / l) * rim;
+      }
+      ctx.fillStyle = '#f4f6ff';
+      ctx.beginPath();
+      ctx.moveTo(x, y - 6);
+      ctx.lineTo(x - 5, y + 4);
+      ctx.lineTo(x + 5, y + 4);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // Player arrow: fixed at the centre, always pointing up (forward).
+    ctx.save();
+    ctx.translate(cx, cy);
     ctx.fillStyle = '#fbf3e4';
     ctx.beginPath();
     ctx.moveTo(0, -9);
@@ -458,10 +503,16 @@ export class HUD {
     ctx.closePath();
     ctx.fill();
     ctx.restore();
-    // North marker.
-    ctx.fillStyle = 'rgba(251,243,228,0.7)';
-    ctx.font = '600 20px "Noto Sans", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('N', cx, 24);
+
+    // North marker travels around the rim as the map rotates.
+    {
+      const nx = cx + Math.sin(theta) * (S / 2 - 16);
+      const ny = cy - Math.cos(theta) * (S / 2 - 16);
+      ctx.fillStyle = 'rgba(251,243,228,0.85)';
+      ctx.font = '600 20px "Noto Sans", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('N', nx, ny);
+    }
   }
 }

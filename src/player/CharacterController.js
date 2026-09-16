@@ -180,8 +180,12 @@ export class CharacterController {
     const uphill = hx * gx + hz * gz; // >0 means climbing
     if (uphill > 0) targetSpeed *= 1 - clamp(uphill * 0.55, 0, 0.5);
     else targetSpeed *= 1 + clamp(-uphill * 0.18, 0, 0.12);
-    // Impassable slope directly ahead: stop.
-    if (this.slope > MAX_SLOPE_WALKABLE && uphill > 0.25) targetSpeed = 0;
+    // Steep slope ahead: slow down, never stop — nothing in this world can trap
+    // the player. Climbing out of water is always allowed at a fair pace.
+    if (this.slope > MAX_SLOPE_WALKABLE && uphill > 0.25) {
+      const steep = clamp((this.slope - MAX_SLOPE_WALKABLE) / 0.7, 0, 1);
+      targetSpeed *= this.swimming || this.wading ? 0.85 : 1 - steep * 0.65;
+    }
 
     // --- speed integration (velvety exponential damping) ------------------
     const halfLife = targetSpeed > this.speed ? 0.09 : 0.12;
