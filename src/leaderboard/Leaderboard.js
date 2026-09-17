@@ -78,6 +78,16 @@ export class SupabaseAdapter {
     return { apikey: this.key, Authorization: `Bearer ${this.key}`, 'Content-Type': 'application/json' };
   }
   async claimName(name, secret) {
+    // Fast path: one Postgres call through PostgREST. Falls back to the Edge Function.
+    try {
+      const res = await withTimeout(fetch(`${this.url}/rest/v1/rpc/claim_name`, { method: 'POST', headers: this._headers(), body: JSON.stringify({ p_name: name, p_secret: secret }) }), FETCH_TIMEOUT_MS);
+      if (res.ok) {
+        const j = await res.json();
+        return j.ok ? { ok: true, name: j.name } : { ok: false, reason: j.reason || 'invalid' };
+      }
+    } catch {
+      /* fall through */
+    }
     let res;
     try {
       res = await withTimeout(fetch(`${this.url}/functions/v1/claim-name`, { method: 'POST', headers: this._headers(), body: JSON.stringify({ name, secret }) }), FETCH_TIMEOUT_MS);
@@ -91,10 +101,23 @@ export class SupabaseAdapter {
     return { ok: true, name: data.name };
   }
   async submit(row) {
+    const { secret, ...payload } = row;
+    // Fast path: one Postgres call. The function validates, checks the secret,
+    // rate-limits and inserts atomically. Falls back to the Edge Function.
+    try {
+      const res = await withTimeout(fetch(`${this.url}/rest/v1/rpc/submit_score`, { method: 'POST', headers: this._headers(), body: JSON.stringify({ p: payload, p_secret: secret }) }), FETCH_TIMEOUT_MS);
+      if (res.ok) {
+        const j = await res.json();
+        if (j.ok) return { ok: true };
+        // 429 (rate limit) is worth retrying later; validation/identity failures are final.
+        return { ok: false, reason: j.reason, retry: j.status === 429 };
+      }
+    } catch {
+      /* fall through */
+    }
     const res = await withTimeout(fetch(`${this.url}/functions/v1/submit-score`, { method: 'POST', headers: this._headers(), body: JSON.stringify(row) }), FETCH_TIMEOUT_MS);
     if (res.ok) return { ok: true };
     const text = await res.text().catch(() => res.statusText);
-    // 422 = validation rejected for good (don't retry); 403 = identity problem.
     return { ok: false, reason: text || res.statusText, retry: res.status === 429 || res.status >= 500 };
   }
   async fetch(board, mode, limit) {

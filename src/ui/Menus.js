@@ -343,7 +343,8 @@ export class Menus {
     try {
       data = await this.leaderboard.fetch(this.lbBoard, { friendsOnly: this.lbFriends, playerName: me, mode: this.lbHunt ? 'hunt' : null, force });
     } catch (err) {
-      el.querySelector('.lb-wrap').innerHTML = `<div class="meta">${String(err.message || err)}</div>`;
+      if (!el.isConnected) return;
+      el.querySelector('.lb-wrap').innerHTML = `<div class="meta">${t.t('boardOffline')}</div>`;
       return;
     }
     if (this.screen !== 'leaderboard' || !el.isConnected) return;

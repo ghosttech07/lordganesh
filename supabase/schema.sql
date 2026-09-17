@@ -1,4 +1,5 @@
--- Scores + player identities for "Mooshika & the Endless Modak".
+-- Scores + player identities for "Ganesh & Unlimited Modak".
+-- Apply this file first, then supabase/rpc.sql (fast claim/submit/rank functions).
 --
 -- Reads are public through the views below. Writes happen ONLY through the
 -- Edge Functions (service role): `claim-name` creates a player identity and

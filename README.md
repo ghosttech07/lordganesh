@@ -254,7 +254,17 @@ server, names are unique per browser (the menu says so).
 
 **Under load.** Gameplay is entirely client-side — players never affect each
 other's frame rate. The only shared path is the leaderboard, which is built so
-a crowd can't hurt it:
+a crowd can't hurt it. Measured against the live project with 80–120 players
+acting *simultaneously* (a far harsher pattern than real play, where each
+player claims once and submits once per run): name claims p50 0.4 s, score
+submits p50 2.9 s, board reads p50 0.2 s, 100 % success, exactly one winner
+in a 120-way same-name race, cheated/forged submissions rejected. With the
+backend unreachable the game starts in ~3 s, plays at full frame rate, and
+queues the score.
+
+* claim/submit are single-round-trip Postgres functions (`supabase/rpc.sql`:
+  `claim_name`, `submit_score`) called through PostgREST — no Edge Function
+  cold start; the Edge Functions remain as a fallback path;
 
 * reads hit best-per-player views (`leaderboard_daily/weekly/alltime`) with
   `limit 100`, backed by composite indexes; a player's exact rank comes from

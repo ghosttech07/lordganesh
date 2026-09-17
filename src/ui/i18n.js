@@ -12,6 +12,7 @@ export const LANGUAGES = [
 
 const STRINGS = {
   en: {
+    boardOffline: "Leaderboard unavailable right now — check your connection. Your scores are kept and sent when it returns.",
     rotateDevice: "Rotate your device to landscape to play",
     topPlayers: "Top players",
     playersCount: "players",
@@ -122,6 +123,7 @@ const STRINGS = {
     playAgain: 'New Journey',
   },
   hi: {
+    boardOffline: "लीडरबोर्ड अभी उपलब्ध नहीं — कनेक्शन जाँचें। आपके अंक सुरक्षित हैं और बाद में भेजे जाएँगे।",
     rotateDevice: "खेलने के लिए डिवाइस को लैंडस्केप में घुमाएँ",
     topPlayers: "शीर्ष खिलाड़ी",
     playersCount: "खिलाड़ी",
@@ -232,6 +234,7 @@ const STRINGS = {
     playAgain: 'नई यात्रा',
   },
   mr: {
+    boardOffline: "लीडरबोर्ड सध्या उपलब्ध नाही — कनेक्शन तपासा. तुमचे गुण जतन आहेत आणि नंतर पाठवले जातील.",
     rotateDevice: "खेळण्यासाठी डिव्हाइस आडवे (लँडस्केप) करा",
     topPlayers: "अव्वल खेळाडू",
     playersCount: "खेळाडू",
@@ -342,6 +345,7 @@ const STRINGS = {
     playAgain: 'नवीन प्रवास',
   },
   te: {
+    boardOffline: "లీడర్‌బోర్డ్ ప్రస్తుతం అందుబాటులో లేదు — కనెక్షన్ తనిఖీ చేయండి. మీ స్కోర్లు భద్రంగా ఉన్నాయి, తర్వాత పంపబడతాయి.",
     rotateDevice: "ఆడటానికి పరికరాన్ని ల్యాండ్‌స్కేప్‌కు తిప్పండి",
     topPlayers: "టాప్ ప్లేయర్లు",
     playersCount: "ఆటగాళ్లు",
@@ -452,6 +456,7 @@ const STRINGS = {
     playAgain: 'కొత్త ప్రయాణం',
   },
   ta: {
+    boardOffline: "தரவரிசை தற்போது கிடைக்கவில்லை — இணைப்பைச் சரிபார்க்கவும். மதிப்பெண்கள் சேமிக்கப்பட்டு பின்னர் அனுப்பப்படும்.",
     rotateDevice: "விளையாட சாதனத்தை லேண்ட்ஸ்கேப்பாகத் திருப்பவும்",
     topPlayers: "சிறந்த வீரர்கள்",
     playersCount: "வீரர்கள்",
