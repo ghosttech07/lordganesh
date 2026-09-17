@@ -1,300 +1,196 @@
 # Ganesh & Unlimited Modak
 
-A 3D open-world collection game (this is the root project of `mushak-dash`; the earlier Babylon.js runner is archived untouched in `_legacy/`). Ride with Ganesha on Mooshika across an
-infinite, procedurally generated world; reach a glowing modak, answer a
-question about Ganesha, collect it, and it respawns somewhere new. Score goes
-to a leaderboard. No death, no damage, no fail state — only "try the question
-again".
+A 3D open-world collection game. Ride with Lord Ganesha on Mooshika across an
+endless, procedurally generated land. Golden modaks glow in the distance —
+reach one, answer a question about Ganesha, and it's yours. Every answer
+teaches something real. There is no losing: a wrong answer only means
+"try again".
 
-```
-npm install
-npm run dev        # http://localhost:3003
-npm run build      # dist/
-```
+<p align="center">
+  <img src="docs/screenshots/ganesha.jpg" width="49%" alt="Ganesha on Mooshika" />
+  <img src="docs/screenshots/village-house.jpg" width="49%" alt="A village house with toran and diyas" />
+</p>
+<p align="center">
+  <img src="docs/screenshots/kailash.jpg" width="49%" alt="Mount Kailash snowfields" />
+  <img src="docs/screenshots/night.jpg" width="49%" alt="Modak beams at night" />
+</p>
 
-Play online: **https://ghosttech07.github.io/lordganesh/** (built and
-published from `main` by `.github/workflows/deploy.yml`).
+## Play
 
-## Controls
+- **Web:** deployed from this repository on Vercel (import the repo, preset
+  *Vite*) — see [Deploying](#deploying).
+- **Locally:**
 
-| Action        | Keyboard / mouse         | Gamepad            | Touch                       |
-| ------------- | ------------------------ | ------------------ | --------------------------- |
-| Move          | WASD / arrows            | Left stick         | Left-half virtual joystick  |
-| Look          | Mouse (click to lock)    | Right stick        | Drag on right half          |
-| Walk / run    | default run; Ctrl/C walk | stick deflection   | joystick deflection         |
-| Sprint        | Shift                    | LS click / RT / X  | RUN button                  |
-| Leap          | Space                    | A                  | LEAP button                 |
-| Mount / off   | E                        | Y                  | RIDE / GET OFF button       |
-| Pause         | Esc                      | Start              | II button                   |
-| Answer        | 1–4, Enter to continue   | A to continue      | tap                         |
-| Mute music    | M                        |                    |                             |
-| Debug overlay | F3 (or `?debug`)         |                    |                             |
+  ```bash
+  npm install
+  npm run dev        # http://localhost:3003
+  npm run build      # production build in dist/
+  ```
 
-URL flags: `?seed=anything` (custom world), `?quality=low|medium|high|ultra`,
-`?debug`, `?renderer=webgpu` (experimental).
+Requires a browser with WebGL 2 (every current desktop and mobile browser).
 
-## Architecture
+## How to play
+
+| Action | Keyboard / mouse | Gamepad | Touch |
+| --- | --- | --- | --- |
+| Move | WASD / arrows | Left stick | Left joystick |
+| Look | Mouse (click to lock) | Right stick | Drag on the right half |
+| Sprint | Shift | LS click / RT | RUN |
+| Leap | Space | A | LEAP |
+| Get off / ride / call Mooshika | E | Y | RIDE / GET OFF |
+| Camera view | V | — | CAM |
+| Pause | Esc | Start | II |
+| Answer | 1–4, Enter to continue | A to continue | tap |
+| Mute music | M | — | — |
+
+- **Modaks** are marked by beams of light, edge arrows, the compass and the
+  minimap. Walk into one and a question card appears. Correct: **+100** and a
+  new modak spawns elsewhere. Wrong: the correct answer and a short
+  explanation are shown — the teaching moment — with a 5-second cooldown.
+  Streaks of 3, 5 and 10 correct answers give bonuses of 50, 150 and 500.
+- **Hidden modaks** (marked **?**) sit inside houses, huts and caves. Mooshika
+  cannot go indoors: press **E** to dismount and walk in on foot. Press **E**
+  away from him to whistle him back.
+- **Challenge types:** multiple-choice questions, fill-the-blank shlokas,
+  arrange-in-order puzzles (mantras, stories, the Ashtavinayak yatra, the eight
+  avatars…) and match-the-pairs sets. Missed ones are collected under
+  *Modaks you missed* for review.
+- **Two modes:** *Free Journey*, and **Modak Hunt** — the competitive mode with
+  more modaks hidden indoors; end it from the pause menu to post your score.
+- **Names are unique across all players.** The first time you play, your name
+  is claimed for your device. The leaderboard shows daily, weekly and all-time
+  boards, your rank, a friends filter and a Hunt-only filter, and refreshes
+  itself while open.
+- The run is **saved on your device**; come back later and press *Continue*.
+- On phones the game plays **fullscreen in landscape**; rotate the device if
+  asked.
+
+<p align="center">
+  <img src="docs/screenshots/hunt-door.jpg" width="49%" alt="Modak Hunt at a village door" />
+  <img src="docs/screenshots/question.jpg" width="49%" alt="A question card with the explanation" />
+</p>
+<p align="center">
+  <img src="docs/screenshots/match.jpg" width="49%" alt="Match the pairs puzzle" />
+  <img src="docs/screenshots/mobile.jpg" width="49%" alt="Touch controls on a phone" />
+</p>
+
+URL flags for testing: `?seed=anything` (a different world than today's shared
+one), `?quality=low|medium|high|ultra`, `?debug` (FPS / draw-call overlay),
+`?renderer=webgpu` (experimental).
+
+## The world
+
+- **Infinite and deterministic.** Terrain height, climate, biomes and prop
+  placement are pure functions of `(seed, x, z)`; nothing is stored. Everyone
+  playing on the same day shares one world seed, so leaderboard runs are
+  comparable. Chunks (128 × 128 m, 5 × 5 active) are built in Web Workers and
+  uploaded at most one per frame.
+- **Six biomes** blended without hard edges: riverbank, forest grove, temple
+  ruins, flower fields, rocky hills and the Kailash snowfields. Props (banyans,
+  deodars, shrubs, grass, marigolds, lotus ponds, archways, pillars, lamps,
+  shrines, rocks, houses, huts, wells, lampposts, prayer flags, burrows, caves)
+  are scattered with seamless Poisson-disc spacing and drawn as one instanced
+  draw call per prop type per chunk, with three LOD levels chosen by
+  screen-space size.
+- **Mount Kailash** rises ~1 km north-west of spawn (white marker on the
+  compass): a highland plateau, a terraced peak, a snow line, deodar forests
+  and prayer flags, visible from kilometres away.
+- **Villages** of plastered houses with terracotta roofs, marigold torans and
+  lit windows, thatched huts, wells and garlanded lampposts; they glow at
+  night. Houses are hollow with real floors and doorways. Burrows and caves
+  are the dens.
+- **Rendering:** layered triplanar PBR terrain (grass, soil, rock, sand, snow),
+  4-cascade shadow maps, image-based lighting baked from the sky, a 20-minute
+  day–night cycle with clouds, water with depth colour and shoreline foam,
+  MSAA + alpha-to-coverage foliage, GTAO, bloom, god rays, ACES tone mapping
+  and a warm saffron grade. Four quality presets are auto-selected by device.
+- **Ganesha** is a textured, image-to-3D model auto-rigged in code: he turns
+  his head, blinks, moves all four hands, and — when he dismounts — walks on
+  procedural legs with a distance-driven gait. Mooshika is a procedural rig
+  with sheen fur, a distance-synced gait (no foot sliding) and his own little
+  brain when left waiting.
+- **Audio** is fully synthesised: biome ambience, surface-dependent footsteps,
+  a temple bell on collect, a tabla sting on streaks and a raga drone.
+
+## Deploying
+
+### Vercel (recommended)
+
+1. Go to <https://vercel.com/new> and import this repository.
+2. Framework preset **Vite** — build `npm run build`, output `dist` (the
+   included `vercel.json` sets these and long-lived caching for the model and
+   assets). No environment variables are needed.
+3. Deploy. Every push to `main` redeploys automatically.
+
+### GitHub Pages
+
+`.github/workflows/deploy.yml` builds and publishes on every push to `main`.
+Enable it once under *Settings → Pages → Source: GitHub Actions*; the site
+then lives at `https://<owner>.github.io/<repo>/`.
+
+## Backend (leaderboard)
+
+The global leaderboard runs on Supabase. The public project URL and anon key
+live in `src/leaderboard/config.js` (a public key by design — row-level
+security and the database functions decide what it can do), so every build
+shares one board. To run your own:
+
+1. Create a Supabase project and run `supabase/schema.sql`, then
+   `supabase/rpc.sql`, in the SQL editor.
+2. Optionally deploy the Edge Functions
+   (`supabase functions deploy claim-name` / `submit-score`) — they are a
+   fallback path; the game normally calls the Postgres functions directly.
+3. Put your URL and anon key in `.env` (`VITE_SUPABASE_URL`,
+   `VITE_SUPABASE_ANON_KEY`) or in `config.js`.
+
+What the backend guarantees:
+
+- **Unique names** — a unique index on the lower-cased name; each device holds
+  a secret whose hash is stored server-side, and only that device can submit
+  under the name.
+- **Validated scores** — score must equal `modaks × 100 + streak bonuses`,
+  bonus counts must be possible, and modaks per minute must be humanly
+  achievable; one submission per player per 20 s.
+- **Scales** — reads use best-per-player views with `limit 100`; a player's
+  rank is one RPC. Load-tested at 120 simultaneous players: claims p50 0.4 s,
+  submits p50 2.9 s, board reads p50 0.2 s, 100 % success, exactly one winner
+  in a 120-way same-name race. If the backend is unreachable the game still
+  starts and plays; scores are queued on the device and sent later.
+
+## Project layout
 
 ```
 src/
-  core/      Engine (fixed 60 Hz step + interpolated render), Input, Settings,
-             DeviceTier, ScoreSystem, MathUtils (allocation-free helpers)
-  world/     Noise (seeded simplex + worley), TerrainField (analytic height/
-             climate/biome/scatter), terrain.worker (off-thread chunk build +
-             ground-layer weights), TerrainTextures + textures.worker (bakes
-             tileable PBR grass/soil/rock/sand at load), TerrainMaterial
-             (layered triplanar shader on MeshStandardMaterial), ChunkManager
-             (streaming, LOD, colliders), PropLibrary (procedural LOD meshes,
-             leaf-card canopies), Sky (sun/CSM/IBL/day-night/clouds), Water
-  player/    CharacterController (kinematic capsule + analytic ground snap),
-             MooshikaRig (procedural rig with physically based fur/skin/gold/
-             silk, distance-driven gait blendspace), CharacterTextures (fur,
-             elephant-skin and brushed-gold maps), CameraRig (spring arm)
-  modak/     ModakSystem (12 pooled modaks, ring spawn, frustum-aware respawn)
-  questions/ questions.json (160 questions, 5 categories, 3 tiers),
-             QuestionSystem (score-scaled difficulty, no repeats)
-  leaderboard/ validate.js (shared client/server rules), Leaderboard
-             (Local or Supabase adapter)
-  fx/        PostFX (GTAO → bloom → god rays → grade → ACES → SMAA),
-             Particles (pooled), ProceduralTextures
-  audio/     AudioEngine (fully synthesised: ambience, footsteps, bell, tabla,
-             raga drone)
-  ui/        HUD, QuestionCard, Menus, i18n (en, hi, mr, te, ta), styles
-supabase/    schema.sql + submit-score Edge Function (server-side validation)
+  core/        Engine (fixed 60 Hz step, interpolated render), Input, Settings,
+               DeviceTier, ScoreSystem, RunSave, MathUtils
+  world/       Noise, TerrainField, terrain/texture workers, ChunkManager,
+               PropLibrary, Biomes, Sky, Water, Landmark (Kailash)
+  player/      CharacterController, MooshikaRig, GaneshaRig (auto-rig),
+               MountAI, CameraRig
+  modak/       ModakSystem
+  questions/   questions.json, fillblanks.json, puzzles.json, matches.json,
+               QuestionSystem
+  leaderboard/ config, Identity, Leaderboard (Supabase / local adapters),
+               validate
+  fx/          PostFX, Particles, Birds, ProceduralTextures
+  audio/       AudioEngine (synthesised)
+  ui/          HUD, menus, question/puzzle/match cards, tutorial, i18n
+               (English, Hindi, Marathi, Telugu, Tamil), styles
+supabase/      schema.sql, rpc.sql, Edge Functions
+public/        Ganesha model, manifest, icon
 ```
 
-### How the world stays deterministic and infinite
+## Tone
 
-Everything — height, biome, prop placement — is a pure function of
-`(seed, x, z)` (`TerrainField.js`). Nothing is stored. The same seed produces
-the same world on any machine; the daily leaderboard uses a shared seed
-derived from the UTC date. Chunks (128×128 u, 5×5 active grid) are built in a
-Web Worker pool and uploaded at most one per frame; the main thread never
-computes terrain geometry.
+The deity is treated with dignity. No death, no damage, no fail state — only
+"try the question again". Every explanation teaches something real.
 
-Prop scatter is grid-priority dart throwing: one hashed candidate per cell,
-kept only if no higher-priority neighbour lies within the disc radius. It has
-Poisson-disc spacing, is seamless across chunk borders, and acceptance is
-scaled by biome weight so populations fade across borders instead of cutting.
+## Tech
 
-### Why movement feels smooth
+Three.js r186 (WebGL 2; experimental WebGPU path), Vite, Web Workers, Web
+Audio, Supabase (Postgres + PostgREST + Edge Functions). No game engine, no
+asset pipeline: everything except the Ganesha model is generated at runtime.
 
-* The controller is kinematic. Ground height is an exact analytic query, so
-  there is no rigid body to stutter on slopes. Prop collisions are circle
-  push-outs.
-* Simulation runs at a fixed 60 Hz; rendering interpolates between the last two
-  states, so 120 Hz displays get 120 distinct frames and a hitch never changes
-  the simulated path.
-* Speed integrates toward a target with separate accel (25) / decel (35);
-  heading is damped (0.055 s) and rate-capped (8 rad/s); velocity is always
-  along heading, giving natural arcs.
-* The gait phase advances by *distance travelled / stride*, so foot contacts
-  are glued to the ground at any speed. Gait parameters are interpolated across
-  speed keys and every parameter is damped with a 0.15 s crossfade.
-* Ganesha is a child of Mooshika's saddle node — one transform, no drift.
-* Camera: pivot damped 0.12 s, rotation 0.08 s, FOV 65→78° with speed, spring
-  arm shortens against terrain and tall props, auto-follows heading after 1.4 s
-  without look input. No shake.
+## License
 
-### Performance
-
-Measured on an Apple-silicon Mac in headless Chrome, 1280×720:
-
-| Preset | Draw calls | Notes                                                        |
-| ------ | ---------- | ------------------------------------------------------------ |
-| Low    | ~100       | no shadows / AO / SMAA, 35 % vegetation, 512² ground layers  |
-| Medium | ~170       | 2 cascades @1024, 512² ground layers                         |
-| High   | ~370       | 4 cascades @2048, GTAO, god rays, SMAA, 1K ground layers     |
-| Ultra  | ~450–550   | as High, native pixel ratio (up to 4×), 4096² cascades, 16× AF |
-
-Ultra renders at the display's native resolution — on a 4K/5K/8K monitor that
-is the output size; there is no fixed "8K" target below that.
-
-The base scene is ~70–90 draw calls; the rest is shadow cascades and the AO
-normal pre-pass. Shadow maps are rendered exactly once per frame
-(`shadowMap.autoUpdate = false`) and only the 3×3 chunks around the player
-self-shadow. Props use one `InstancedMesh` per type per chunk; LOD is chosen by
-screen-space height and applied by swapping the instanced mesh's geometry, so
-the draw-call count never changes. The per-frame update path allocates
-nothing: scratch vectors, typed arrays, numeric chunk keys, pooled particles,
-pooled modaks, pooled HUD indicators.
-
-### Rendering realism pass
-
-* Ground is four tileable PBR layers (grass, soil, rock, sand — albedo,
-  normal, roughness) generated in a worker and stored as 2D texture arrays.
-  Weights per vertex come from biome, slope, shoreline and patch noise; the
-  shader samples grass/soil/sand planar at two scales (kills tiling) and rock
-  triplanar (no smearing on cliffs), then blends the normals in world space.
-* A micro-relief octave gives the ground small undulations.
-* Trees and shrubs use alpha-tested leaf cards around a dark core.
-* Mooshika uses `MeshPhysicalMaterial`: fur with sheen and strand normals,
-  wet clearcoated eyes and nose. The procedural Ganesha (fallback) uses skin
-  with wrinkle normals, brushed clearcoated gold, silk with gold sheen, ivory
-  and ruby; the shipped Ganesha is the textured GLB described below.
-
-### Mobile
-
-* Touch controls appear on any device with a touch screen (Settings → Touch
-  controls: Auto / On / Off): joystick on the left, drag to look on the
-  right, RUN · LEAP · RIDE/GET OFF · CAM · pause buttons.
-* Play is landscape only: starting or resuming a run requests fullscreen and
-  locks landscape where the browser allows (Android); in portrait a "rotate
-  your device" screen covers the game. A web-app manifest makes the
-  home-screen install fullscreen + landscape.
-
-### First run, and coming back
-
-* A six-page **How to play** overlay appears the first time a run starts on a
-  device (goal, controls, modaks & questions, houses & Mooshika, modes &
-  leaderboard, tips); it is also under *How to play* in the main and pause
-  menus. All five UI languages.
-* The current run is **saved on the device** every 5 s, on pause, and when the
-  tab is hidden or closed (`core/RunSave.js`). Returning players get a
-  *Continue · score · mode* button: score, streak and stats resume; the
-  position too when it is the same day's world. Submitting a run clears it.
-* Houses and huts stand on a deep stone foundation, are placed only on
-  near-flat ground, and expose a real flat **floor** (`ChunkManager.groundAt`)
-  that the player, the mount and the camera stand on, with a short ramp at the
-  doorway — no more sinking into or floating above the floor.
-
-### Mount and dismount
-
-* **E** (gamepad **Y**, touch **GET OFF / RIDE**) toggles riding. Off the
-  mount, Ganesha glides on a lotus pedestal at calmer speeds with a narrower
-  collider; Mooshika stays where he was left and idles.
-* **Houses and huts are on foot only.** Doorways carry a blocker that only
-  applies while mounted (`queryDoorBlockers`), so Mooshika cannot enter; caves
-  are open to both. Mounting is refused indoors ("Mooshika waits outside").
-* Press **E** away from Mooshika to whistle: he runs to you (`MountAI`),
-  pushing around props like the player and stopping at any doorway, and
-  Ganesha hops on when he arrives outdoors.
-* Hidden modaks inside buildings therefore always require dismounting.
-
-### Modak Hunt (competitive mode) and puzzles
-
-* **Two modes** from the main menu: *Free Journey* and **Modak Hunt** — the
-  competitive run on the day's shared seed, untimed: play at your own pace and
-  end the run from the pause menu to submit, tagged `mode: hunt`. (A time
-  limit can be re-enabled by setting `HUNT_SECONDS` in `Game.js`.)
-  The leaderboard has a "Hunt only" toggle (default on) and ranks within the
-  mode; the daily board is the competition.
-* **Hidden modaks**: a share of the twelve (40 % free, 50 % hunt) spawn *inside*
-  houses, huts and caves. They have no beam; their edge indicator shows "?"
-  and a distance rounded to 25 m, and the compass tick is hollow. You walk in
-  through the door to find them.
-* **Challenge types**: open modaks pose multiple-choice questions or
-  fill-the-blank shlokas (`fillblanks.json`); indoor modaks pose an
-  arrange-in-order puzzle or a match-the-pairs set (`matches.json`).
-* **Puzzles**: hidden modaks pose an arrange-in-order puzzle (`puzzles.json`,
-  20 sequences: mantras, shlokas, story order, Ashtavinayak yatra, the eight
-  avatars, puja steps…). Tap chips into order (number keys work), submit;
-  wrong order shows the correct sequence and the explanation with the same
-  5 s cooldown. Open modaks still pose questions. Scoring is identical
-  (+100, streaks), so the server validation is unchanged.
-* **Enterable buildings**: houses and huts are hollow with a real doorway and
-  an open door leaf; caves are dome shells with a mouth. Walls are rasterised
-  into small circle colliders (`PROP_COLLIDERS` with `walls` / `ring`), the
-  doorway is a gap, and the camera's spring arm treats walls as blockers so it
-  follows you indoors. Interiors have an oil lamp.
-
-### Ganesha's world: villages, dens, Kailash
-
-* **Mount Kailash** is a fixed landmark every seed shares (`KAILASH` in
-  `WorldConfig.js`): a highland plateau rising to a terraced 165 u peak, ~1 km
-  north-west of spawn. Above `SNOW_LINE` a fifth ground layer (snow) blends in
-  by elevation with a noisy snow line and thins on steep faces. A coarse mesh
-  of the same height field (`Landmark.js`) is drawn with ~4× thinner fog so
-  the mountain reads from kilometres away and hands off to streamed chunks.
-  The compass shows a white peak marker with distance.
-* **Kailash Snowfields biome** (6th biome): deodar cedars, prayer flags,
-  caves, lamps and shrines on snow.
-* **Villages**: houses (plaster walls, terracotta pitched roofs, blue window
-  frames with warm-lit glass, marigold toran, doorstep diya and rangoli) and
-  round thatched huts, plus wells and garlanded lampposts. They are placed by
-  a cluster field (`cluster` on a scatter rule) so they form hamlets, aligned
-  to a shared orientation grid, on flat ground only. Windows and diyas are
-  emissive, so villages glow at night.
-* **Dens**: mouse burrows (mound, dark entrance, worn apron, a mouse peeking
-  out) in groves and meadows; rock caves with a lamp by the mouth in the hills
-  and around Kailash.
-
-### Ganesha model
-
-`public/models/ganesha.glb` (16 MB, 120k triangles, PBR textures) was
-generated with Meshy image-to-3D from a rendered reference. It ships with no
-skeleton; `src/player/GaneshaRig.js` auto-rigs it at load by *spatial region*:
-vertices in the head volume (crown, ears, trunk — excluding the raised hands
-by depth and height) bind to a head bone at the neck, the four hands and
-their implements bind to wrist bones, the rest stays on the root, with weight
-bands so nothing tears. Blinking is two skin-toned upper-lid shells placed by
-raycasting for the eye surface and rotated shut. He turns his head, looks
-into turns, glances around, blinks irregularly and moves all four hands — on
-a mesh that was never rigged. Delete the GLB and the procedural figure returns.
-
-### Leaderboard, unique names, and load
-
-The global board is on by default: `src/leaderboard/config.js` carries the
-public project URL and anon key (a public key by design — RLS and the Edge
-Functions govern what it can do), so every build, including the GitHub Pages
-deploy, shares one leaderboard. To point at your own project:
-
-1. Create a Supabase project, run `supabase/schema.sql`.
-2. Deploy both Edge Functions: `supabase functions deploy claim-name` and
-   `supabase functions deploy submit-score`.
-3. Copy `.env.example` to `.env` and fill in the URL and anon key.
-
-**Unique names.** On first play a name is *claimed*: the device generates a
-random secret, the server stores only its SHA-256 hash in `players` with a
-unique index on the lower-cased name, so "Ganesh" and "ganesh" are the same
-name and a concurrent double-claim can't both succeed. Submissions must carry
-the claiming device's secret; the score's name is taken from `players`, not
-from the client. If a name is taken the menu offers alternatives. Without a
-server, names are unique per browser (the menu says so).
-
-**Under load.** Gameplay is entirely client-side — players never affect each
-other's frame rate. The only shared path is the leaderboard, which is built so
-a crowd can't hurt it. Measured against the live project with 80–120 players
-acting *simultaneously* (a far harsher pattern than real play, where each
-player claims once and submits once per run): name claims p50 0.4 s, score
-submits p50 2.9 s, board reads p50 0.2 s, 100 % success, exactly one winner
-in a 120-way same-name race, cheated/forged submissions rejected. With the
-backend unreachable the game starts in ~3 s, plays at full frame rate, and
-queues the score.
-
-* claim/submit are single-round-trip Postgres functions (`supabase/rpc.sql`:
-  `claim_name`, `submit_score`) called through PostgREST — no Edge Function
-  cold start; the Edge Functions remain as a fallback path;
-
-* reads hit best-per-player views (`leaderboard_daily/weekly/alltime`) with
-  `limit 100`, backed by composite indexes; a player's exact rank comes from
-  one `player_rank` RPC instead of pulling the board;
-* the client caches boards for 60 s, coalesces concurrent requests, backs
-  off exponentially on failure and serves stale data rather than hammer;
-* `submit-score` rate-limits to one submission per player per 20 s and
-  validates everything server-side;
-* a failed submission (offline, 429, 5xx) is queued in localStorage and
-  retried from the menu with backoff — the game loop never awaits the
-  network, so a dead server can neither lag nor crash a session.
-
-## Deviations from the brief (deliberate, stated)
-
-* **No physics library.** The brief forbids rigid-body terrain following and
-  wants capsule + raycast ground snap; with an analytic terrain, the remaining
-  job (circle push-outs against props) doesn't justify cannon-es/Rapier. The
-  controller is deterministic and lives in one file.
-* **TAA → SMAA.** three.js's WebGL pipeline has no motion-vector TAA (its
-  `TAARenderPass` accumulates static frames and ghosts in motion). SMAA is used.
-* **SSR on water → env reflection + fresnel.** `SSRPass` costs a full extra
-  scene pass; the water shader uses per-vertex depth (computed in the worker)
-  for colour, shoreline foam and edge fade instead of a depth-buffer readback.
-* **Occlusion culling** is frustum + screen-size culling (props below ~5 px are
-  skipped). There is no GPU occlusion-query pass.
-* **Assets.** Everything is procedural — no GLB/KTX2 files ship. Dropping real
-  Draco/KTX2 assets in is a loader change, not an architecture change.
-* **WebGPU** is an experimental toggle. `WebGPURenderer` ignores GLSL
-  `onBeforeCompile` patches, `ShaderMaterial`, the `Sky` shader and the
-  `EffectComposer` chain, so that path runs with plain materials, a single
-  shadowed sun and no post effects. WebGL 2 is the shipping renderer.
-* **Question text is English**; the UI is localised in five languages. The
-  bank schema leaves room for `q_hi` / `o_hi` / `why_hi` style fields.
+MIT
