@@ -4,3 +4,11 @@ dist
 .env.local
 .DS_Store
 _legacy
+.idea
+android/.gradle
+android/build
+android/app/build
+android/captures
+android/local.properties
+*.apk
+*.aab

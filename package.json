@@ -7,12 +7,17 @@
   "scripts": {
     "dev": "vite --host",
     "build": "vite build",
-    "preview": "vite preview --host"
+    "preview": "vite preview --host",
+    "cap:sync": "cap sync android",
+    "build:android": "vite build && cap sync android"
   },
   "dependencies": {
     "three": "^0.186.0"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/cli": "^8.5.2",
+    "@capacitor/core": "^8.5.2",
     "vite": "^7.1.7"
   }
 }

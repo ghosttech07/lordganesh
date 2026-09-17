@@ -1,0 +1,13 @@
+{
+  "appId": "com.ghosttech.unlimitedmodak",
+  "appName": "Unlimited Modak",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "backgroundColor": "#1a0f08",
+    "allowMixedContent": true
+  }
+}

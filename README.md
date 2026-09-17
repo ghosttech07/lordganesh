@@ -195,6 +195,20 @@ Three.js r186 (WebGL 2; experimental WebGPU path), Vite, Web Workers, Web
 Audio, Supabase (Postgres + PostgREST + Edge Functions). No game engine, no
 asset pipeline: everything except the Ganesha model is generated at runtime.
 
+## Android APK & Installation
+
+You can install the game on Android in two ways:
+
+1. **Direct Android APK (Offline Native App)**:
+   - Go to the **[Releases](https://github.com/ghosttech07/lordganesh/releases)** tab or the latest **[Actions](https://github.com/ghosttech07/lordganesh/actions)** run.
+   - Download `UnlimitedModak-debug.apk` directly onto your Android device.
+   - Open the downloaded file to install and play fullscreen in landscape mode!
+
+2. **Instant Home Screen Install (PWA)**:
+   - Open the live game link in Chrome on your phone.
+   - Tap **⋮ (Menu) -> Add to Home screen / Install App**.
+   - Plays fullscreen like a native app without manual APK installation.
+
 ## License
 
 MIT
