@@ -38,7 +38,7 @@ export const BIOMES = [
       { prop: 'reeds', density: 70.0, radius: 2.2 },
       { prop: 'grass', density: 220.0, radius: 1.8 },
       { prop: 'lamp', density: 2.0, radius: 12 },
-      { prop: 'hut', density: 5.0, radius: 13, cluster: { scale: 260, threshold: 0.6 }, align: true, maxSlope: 0.3, scaleMin: 0.9, scaleVar: 0.25 },
+      { prop: 'hut', density: 5.0, radius: 13, cluster: { scale: 260, threshold: 0.6 }, align: true, maxSlope: 0.16, scaleMin: 0.9, scaleVar: 0.25 },
       { prop: 'well', density: 0.6, radius: 30, cluster: { scale: 260, threshold: 0.62 }, maxSlope: 0.25 },
     ],
   },
@@ -59,7 +59,7 @@ export const BIOMES = [
       { prop: 'grass', density: 420.0, radius: 1.7 },
       { prop: 'shrine', density: 0.35, radius: 30 },
       { prop: 'burrow', density: 3.0, radius: 9, maxSlope: 0.45 },
-      { prop: 'house', density: 4.0, radius: 17, cluster: { scale: 300, threshold: 0.64 }, align: true, maxSlope: 0.3, scaleMin: 0.9, scaleVar: 0.25 },
+      { prop: 'house', density: 4.0, radius: 17, cluster: { scale: 300, threshold: 0.64 }, align: true, maxSlope: 0.16, scaleMin: 0.9, scaleVar: 0.25 },
     ],
   },
   {
@@ -80,7 +80,7 @@ export const BIOMES = [
       { prop: 'shrine', density: 1.0, radius: 24 },
       { prop: 'grass', density: 120.0, radius: 2.4 },
       { prop: 'rock', density: 3.0, radius: 8 },
-      { prop: 'house', density: 3.2, radius: 17, cluster: { scale: 280, threshold: 0.6 }, align: true, maxSlope: 0.3, scaleMin: 0.9, scaleVar: 0.25 },
+      { prop: 'house', density: 3.2, radius: 17, cluster: { scale: 280, threshold: 0.6 }, align: true, maxSlope: 0.16, scaleMin: 0.9, scaleVar: 0.25 },
       { prop: 'lamppost', density: 2.5, radius: 14, cluster: { scale: 280, threshold: 0.58 }, maxSlope: 0.35 },
     ],
   },
@@ -101,8 +101,8 @@ export const BIOMES = [
       { prop: 'banyan', density: 1.0, radius: 20 },
       { prop: 'shrub', density: 5.0, radius: 6 },
       { prop: 'lamp', density: 1.0, radius: 16 },
-      { prop: 'house', density: 5.0, radius: 16, cluster: { scale: 320, threshold: 0.6 }, align: true, maxSlope: 0.3, scaleMin: 0.9, scaleVar: 0.25 },
-      { prop: 'hut', density: 3.5, radius: 13, cluster: { scale: 320, threshold: 0.62 }, align: true, maxSlope: 0.3, scaleMin: 0.9, scaleVar: 0.25 },
+      { prop: 'house', density: 5.0, radius: 16, cluster: { scale: 320, threshold: 0.6 }, align: true, maxSlope: 0.16, scaleMin: 0.9, scaleVar: 0.25 },
+      { prop: 'hut', density: 3.5, radius: 13, cluster: { scale: 320, threshold: 0.62 }, align: true, maxSlope: 0.16, scaleMin: 0.9, scaleVar: 0.25 },
       { prop: 'well', density: 0.7, radius: 28, cluster: { scale: 320, threshold: 0.64 }, maxSlope: 0.25 },
       { prop: 'lamppost', density: 2.0, radius: 15, cluster: { scale: 320, threshold: 0.6 }, maxSlope: 0.35 },
       { prop: 'burrow', density: 1.5, radius: 10, maxSlope: 0.4 },
@@ -217,7 +217,7 @@ export const PROP_COLLIDERS = {
 
 /** Props with an interior a hidden modak can be placed in: local interior point. */
 export const SHELTERS = {
-  house: [0, 0.45, -0.6],
-  hut: [0, 0.35, -0.5],
+  house: [0, 0.02, -0.6],
+  hut: [0, 0.02, -0.5],
   cave: [0, 0.3, -0.8],
 };

@@ -22,6 +22,18 @@ export class ScoreSystem {
     this.lastBonus = 0;
   }
 
+  /** Restore a saved run (see core/RunSave.js). */
+  restore(d) {
+    this.score = d.score | 0;
+    this.modaks = d.modaks | 0;
+    this.streak = d.streak | 0;
+    this.longestStreak = d.longestStreak | 0;
+    this.answered = d.answered | 0;
+    this.correct = d.correct | 0;
+    this.bonusEvents = Array.isArray(d.bonusEvents) ? d.bonusEvents.slice() : [];
+    this.startTime = performance.now() - (d.elapsed || 0) * 1000;
+  }
+
   /** @returns {number} bonus awarded this answer (0 if none). */
   onCorrect() {
     this.modaks++;

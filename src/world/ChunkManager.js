@@ -660,6 +660,40 @@ export class ChunkManager {
     return hit;
   }
 
+  /**
+   * Ground height for walking: inside a house or hut it is the building's flat
+   * floor (the terrain height at its centre); just outside the doorway a short
+   * ramp blends terrain → floor so stepping in is seamless. Elsewhere, terrain.
+   */
+  groundAt(x, z) {
+    let y = this.field.heightAt(x, z);
+    this.queryShelters(x, z, 9, (sx, sy, sz, ry, type) => {
+      const name = PROP_TYPES[type];
+      if (name !== 'house' && name !== 'hut') return false;
+      const c = Math.cos(ry), sn = Math.sin(ry);
+      const dx = x - sx, dz = z - sz;
+      const lx = dx * c - dz * sn;
+      const lz = dx * sn + dz * c + (name === 'house' ? -0.6 : -0.5); // building-centre frame
+      const floor = sy - 0.02; // interior point sits 0.02 above the floor
+      const hw = name === 'house' ? 4.95 : 3.5;
+      const hd = name === 'house' ? 4.15 : 3.5;
+      const inside = name === 'house' ? Math.abs(lx) < hw && Math.abs(lz) < hd : Math.hypot(lx, lz) < hw;
+      if (inside) {
+        y = floor;
+        return true;
+      }
+      // Door ramp: 2.2 u out from the doorway (+z), within the door's width.
+      const doorZ = name === 'house' ? 3.8 : 3.1;
+      if (Math.abs(lx) < 1.7 && lz >= doorZ - 0.2 && lz < doorZ + 2.2) {
+        const t = 1 - (lz - doorZ) / 2.2;
+        y = y + (floor - y) * Math.max(0, Math.min(1, t));
+        return true;
+      }
+      return false;
+    });
+    return y;
+  }
+
   /** True if (x, z) is inside a house or hut's walls (the mount can't come here). */
   isIndoors(x, z) {
     let inside = false;

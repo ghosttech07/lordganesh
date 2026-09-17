@@ -130,6 +130,14 @@ body:not(.touch-device) .touch { display: none; }
 .hud-timer.low { color: #ff9c8a; animation: pulse 1s ease-in-out infinite; }
 .hud-timer .label { display: block; font-family: var(--font); font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; opacity: 0.75; text-align: center; }
 
+/* Tutorial */
+.tutorial { text-align: center; }
+.tut-icon { font-size: 56px; line-height: 1; margin-bottom: 8px; }
+.tut-body { font-size: 16px; line-height: 1.6; opacity: 0.92; margin: 0 0 18px; text-align: left; }
+.tut-dots { display: flex; justify-content: center; gap: 7px; margin-bottom: 18px; }
+.tut-dots i { width: 8px; height: 8px; border-radius: 50%; background: rgba(251,243,228,0.25); }
+.tut-dots i.on { background: var(--gold); }
+
 /* Leaderboard */
 table.lb { width: 100%; border-collapse: collapse; font-size: 13px; }
 table.lb th, table.lb td { padding: 8px 8px; text-align: left; border-bottom: 1px solid rgba(251,243,228,0.08); }

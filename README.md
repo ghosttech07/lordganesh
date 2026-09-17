@@ -133,6 +133,21 @@ pooled modaks, pooled HUD indicators.
   with wrinkle normals, brushed clearcoated gold, silk with gold sheen, ivory
   and ruby; the shipped Ganesha is the textured GLB described below.
 
+### First run, and coming back
+
+* A six-page **How to play** overlay appears the first time a run starts on a
+  device (goal, controls, modaks & questions, houses & Mooshika, modes &
+  leaderboard, tips); it is also under *How to play* in the main and pause
+  menus. All five UI languages.
+* The current run is **saved on the device** every 5 s, on pause, and when the
+  tab is hidden or closed (`core/RunSave.js`). Returning players get a
+  *Continue · score · mode* button: score, streak and stats resume; the
+  position too when it is the same day's world. Submitting a run clears it.
+* Houses and huts stand on a deep stone foundation, are placed only on
+  near-flat ground, and expose a real flat **floor** (`ChunkManager.groundAt`)
+  that the player, the mount and the camera stand on, with a short ramp at the
+  doorway — no more sinking into or floating above the floor.
+
 ### Mount and dismount
 
 * **E** (gamepad **Y**, touch **GET OFF / RIDE**) toggles riding. Off the

@@ -92,6 +92,7 @@ const DEFAULTS = {
   invertY: false,
   language: 'en',
   playerName: '',
+  tutorialSeen: false,
   mooshikaScale: 0.68,    // size of the mount; Ganesha keeps his own size
   debug: false,
   renderer: 'webgl',      // 'webgl' | 'webgpu' (experimental)

@@ -92,7 +92,7 @@ export class CharacterController {
   teleport(x, z) {
     this.x = this.px = x;
     this.z = this.pz = z;
-    this.y = this.py = this.groundY = this.field.heightAt(x, z);
+    this.y = this.py = this.groundY = this.world.groundAt(x, z);
     this.speed = 0;
     this.vy = 0;
   }
@@ -220,7 +220,7 @@ export class CharacterController {
     // maxDepth the move is refused unless it brings you shallower, and if you
     // are already out there you drift toward the nearest rise until you're
     // back in wading depth. Nobody gets marooned mid-lake.
-    let ground = this.field.heightAt(nx, nz);
+    let ground = this.world.groundAt(nx, nz);
     const depthNow = WATER_LEVEL - this.field.heightAt(this.x, this.z);
     const depthNext = WATER_LEVEL - ground;
     this.tooDeep = false;
@@ -235,7 +235,7 @@ export class CharacterController {
         nx += (this._drift[0] / gl) * 3.0 * dt;
         nz += (this._drift[1] / gl) * 3.0 * dt;
       }
-      ground = this.field.heightAt(nx, nz);
+      ground = this.world.groundAt(nx, nz);
       this.speed = Math.min(this.speed, 2);
     }
     this.groundY = ground;

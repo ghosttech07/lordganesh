@@ -49,7 +49,7 @@ export class MountAI {
 
   placeAt(pose) {
     this.x = this.px = pose.x;
-    this.y = this.py = this.field.heightAt(pose.x, pose.z);
+    this.y = this.py = this.world.groundAt(pose.x, pose.z);
     this.z = this.pz = pose.z;
     this.yaw = this.pyaw = pose.yaw;
     this.speed = 0;
@@ -120,7 +120,7 @@ export class MountAI {
     }
     this.x = this._cx;
     this.z = this._cz;
-    const ground = this.field.heightAt(this.x, this.z);
+    const ground = this.world.groundAt(this.x, this.z);
     this.y = ground;
     const depth = WATER_LEVEL - ground;
     this.swimming = depth > 0.9;

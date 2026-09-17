@@ -26,6 +26,7 @@ export class Menus {
     this.score = null;
     this.seed = 0;
     this.identity = null;
+    this.savedRun = null; // set by Game when a resumable run exists
   }
 
   on(name, fn) {
@@ -80,12 +81,14 @@ export class Menus {
           <div class="meta namestatus" style="margin-top:4px">${this.identity?.claimed && this.identity.name === name ? t.t('nameYours') : this.leaderboard.backend === 'local' ? t.t('uniqueLocalNote') : ''}</div>
         </div>
         <div class="stack" style="margin-top:16px">
-          <button class="btn-primary hunt">${t.t('hunt')}</button>
+          ${this.savedRun ? `<button class="btn-primary cont">${t.t('continueRun')} · ${this.savedRun.score} · ${this.savedRun.mode === 'hunt' ? t.t('hunt') : t.t('freeJourney')}</button><div class="meta" style="margin:-4px 0 4px">${t.t('continueHint')}</div>` : ''}
+          <button class="${this.savedRun ? 'btn-ghost' : 'btn-primary'} hunt">${t.t('hunt')}</button>
           <div class="meta" style="margin:-4px 0 4px">${t.t('huntDesc')}</div>
           <button class="btn-ghost play">${t.t('freeJourney')}</button>
           <div class="row">
             <button class="btn-ghost lb">${t.t('leaderboard')}</button>
             <button class="btn-ghost st">${t.t('settings')}</button>
+            <button class="btn-ghost how">${t.t('howToPlay')}</button>
           </div>
         </div>
         <div class="meta">${t.t('dailyWorld')} · ${t.t('seed')} <code>${this.seed}</code><br>${t.t('controlsHelp')}</div>
@@ -125,6 +128,8 @@ export class Menus {
     };
     el.querySelector('.play').addEventListener('click', () => start('free'));
     el.querySelector('.hunt').addEventListener('click', () => start('hunt'));
+    el.querySelector('.cont')?.addEventListener('click', () => start('continue'));
+    el.querySelector('.how').addEventListener('click', () => this.handlers.howToPlay?.());
     el.querySelector('.lb').addEventListener('click', () => this._push('leaderboard'));
     el.querySelector('.st').addEventListener('click', () => this._push('settings'));
   }
@@ -141,6 +146,7 @@ export class Menus {
             <button class="btn-ghost lb">${t.t('leaderboard')}</button>
             <button class="btn-ghost rv">${t.t('review')}</button>
             <button class="btn-ghost st">${t.t('settings')}</button>
+            <button class="btn-ghost how">${t.t('howToPlay')}</button>
           </div>
           <div class="divider"></div>
           <button class="btn-ghost end">${t.t('endRun')}</button>
@@ -152,6 +158,7 @@ export class Menus {
     el.querySelector('.rv').addEventListener('click', () => this._push('review'));
     el.querySelector('.st').addEventListener('click', () => this._push('settings'));
     el.querySelector('.end').addEventListener('click', () => this.handlers.endRun?.());
+    el.querySelector('.how').addEventListener('click', () => this.handlers.howToPlay?.());
   }
 
   showSettings() {

@@ -173,7 +173,7 @@ export class CameraRig {
     _dir.set(Math.sin(this.yaw) * cp, Math.sin(this.pitch), Math.cos(this.yaw) * cp);
     _pos.copy(this.pivot).addScaledVector(_dir, this.arm);
     // Never let the eye itself dip under the terrain.
-    const floor = Math.max(this.field.heightAt(_pos.x, _pos.z) + 0.35, WATER_LEVEL + 0.45);
+    const floor = Math.max(this.world.groundAt(_pos.x, _pos.z) + 0.35, WATER_LEVEL + 0.45);
     if (_pos.y < floor) _pos.y = floor;
     this.camera.position.copy(_pos);
     this.camera.lookAt(this.pivot);

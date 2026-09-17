@@ -34,6 +34,8 @@ import { QuestionCard } from './ui/QuestionCard.js';
 import { PuzzleCard } from './ui/PuzzleCard.js';
 import { MatchCard } from './ui/MatchCard.js';
 import { Menus } from './ui/Menus.js';
+import { Tutorial } from './ui/Tutorial.js';
+import { RunSave } from './core/RunSave.js';
 
 const STATE = { LOADING: 0, MENU: 1, PLAYING: 2, QUESTION: 3, PAUSED: 4, SUMMARY: 5 };
 const HUNT_SECONDS = 0; // 0 = untimed: the hunt runs until the player ends it
@@ -150,6 +152,7 @@ export class Game {
     this.mode = 'free';
     this.huntLeft = 0;
     this.menus = new Menus(this.uiRoot, this.i18n, this.settings, this.leaderboard, this.audio);
+    this.tutorial = new Tutorial(this.uiRoot, this.i18n);
     this.menus.deviceInfo = this.device;
     this.menus.questionSystem = this.questions;
     this.menus.identity = this.identity;
@@ -230,7 +233,23 @@ export class Game {
 
   _wireUI() {
     const m = this.menus;
-    m.on('play', (mode) => this._startRun(mode || 'free'));
+    m.on('play', (mode) => {
+      // First run on this device: show how to play, then start.
+      if (!this.settings.get('tutorialSeen')) {
+        this.menus.close();
+        this.tutorial.show(() => {
+          this.settings.set('tutorialSeen', true);
+          this._startRun(mode || 'free');
+        });
+        return;
+      }
+      this._startRun(mode || 'free');
+    });
+    m.on('howToPlay', () => {
+      const wasPaused = this.state === STATE.PAUSED;
+      this.menus.close();
+      this.tutorial.show(() => (wasPaused ? this.menus.showPause() : this.menus.showMain()));
+    });
     m.on('resume', () => this._resume());
     m.on('endRun', () => this._endRun());
     m.on('settingsChanged', (key) => {
@@ -267,6 +286,11 @@ export class Game {
     };
     window.addEventListener('pointerdown', gesture);
     window.addEventListener('keydown', gesture);
+    const saveIfPlaying = () => {
+      if (this.state === STATE.PLAYING || this.state === STATE.QUESTION || this.state === STATE.PAUSED) RunSave.save(this);
+    };
+    document.addEventListener('visibilitychange', () => { if (document.hidden) saveIfPlaying(); });
+    window.addEventListener('pagehide', saveIfPlaying);
     window.addEventListener('keydown', (e) => {
       if (e.code === 'KeyM' && this.state === STATE.PLAYING) this.audio.toggleMusic();
       if (e.code === 'F3') {
@@ -287,6 +311,7 @@ export class Game {
 
   _enterMenu() {
     this.state = STATE.MENU;
+    this.menus.savedRun = RunSave.load();
     this.controller.inputEnabled = false;
     this.cameraRig.enabled = false;
     this.input.enabled = false;
@@ -299,6 +324,8 @@ export class Game {
 
   _startRun(mode = 'free') {
     this.menus.close();
+    const saved = mode === 'continue' ? RunSave.load() : null;
+    if (mode === 'continue') mode = saved ? saved.mode : 'free';
     this.mode = mode;
     if (!this.controller.mounted) this._mount();
     // Hunt: more modaks hide indoors and the clock runs; re-seat every modak.
@@ -308,12 +335,27 @@ export class Game {
       m.group.visible = false;
     }
     this.modaks.frozenIndex = -1;
-    this.modaks.populate(this.controller.x, this.controller.z, this.camera);
     this.huntLeft = mode === 'hunt' && HUNT_SECONDS > 0 ? HUNT_SECONDS : 0;
     this.hud.setTimer(this.huntLeft > 0 ? this.huntLeft : null);
     this.score.reset();
     this.hud.displayScore = 0;
     this.questions.missed.length = 0;
+    if (saved) {
+      // Resume: score and stats always; position only if it's the same world.
+      this.score.restore(saved);
+      this.hud.displayScore = saved.score;
+      if (saved.seed === this.seed && Number.isFinite(saved.x) && Number.isFinite(saved.z)) {
+        this.controller.teleport(saved.x, saved.z);
+        this.controller.yaw = saved.yaw || 0;
+        this.cameraRig.reset(saved.x, this.controller.y, saved.z, this.controller.yaw);
+        this.world.update(this.controller.x, this.controller.z, this.camera);
+      }
+    } else {
+      RunSave.clear();
+    }
+    this._saveTimer = 0;
+    // Place modaks around wherever the run actually starts (spawn or resumed spot).
+    this.modaks.populate(this.controller.x, this.controller.z, this.camera);
     this.state = STATE.PLAYING;
     this.controller.inputEnabled = true;
     this.cameraRig.enabled = true;
@@ -333,6 +375,7 @@ export class Game {
     this.input.enabled = false;
     this.input.releasePointer();
     this.hud.setDim(true);
+    RunSave.save(this);
     this.menus.showPause();
   }
 
@@ -361,6 +404,8 @@ export class Game {
     } catch (err) {
       result = { ok: false, reason: String(err.message || err) };
     }
+    RunSave.clear();
+    this.menus.savedRun = null;
     this.menus.showSummary(this.score, result, this.mode);
   }
 
@@ -574,6 +619,13 @@ export class Game {
     this.card.update(dt);
     this.puzzle.update(dt);
     this.match.update(dt);
+    if (this.state === STATE.PLAYING) {
+      this._saveTimer = (this._saveTimer || 0) + dt;
+      if (this._saveTimer > 5) {
+        this._saveTimer = 0;
+        RunSave.save(this);
+      }
+    }
     if (this.state !== STATE.MENU && this.state !== STATE.SUMMARY) {
       const st = this.settings.get('debug') ? this._debugStats() : null;
       this.hud.update(dt, this.score, _pose, this.camera, this.modaks, this.world, this.sky, st);

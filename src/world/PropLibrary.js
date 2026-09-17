@@ -357,7 +357,10 @@ function buildHouse() {
     const parts = [];
     const W = 9.2, D = 7.6, H = 4.1;
     const T = 0.24; // wall thickness
-    parts.push(tint(move(new THREE.BoxGeometry(W + 0.6, 0.4, D + 0.6), 0, 0.2, 0), 0x7a5a40, 0, 0x8d6a4a)); // plinth / mud floor
+    // Floor at ground level (the controller stands on it) over a deep stone
+    // foundation, so on a slope the house sits on masonry instead of floating.
+    parts.push(tint(move(new THREE.BoxGeometry(W + 0.6, 0.12, D + 0.6), 0, 0.0, 0), 0x7a5a40, 0, 0x8d6a4a)); // mud floor
+    parts.push(tint(move(new THREE.BoxGeometry(W + 0.7, 3.0, D + 0.7), 0, -1.55, 0), STONE_DARK, 0, 0x7d766b)); // foundation
     // Hollow walls: back, two sides, and a front split around the doorway.
     parts.push(tint(move(new THREE.BoxGeometry(W, H, T), 0, 0.4 + H / 2, -D / 2 + T / 2), PLASTER, 0, 0xd8b98a));
     parts.push(tint(move(new THREE.BoxGeometry(T, H, D), -W / 2 + T / 2, 0.4 + H / 2, 0), PLASTER, 0, 0xd8b98a));
@@ -397,8 +400,7 @@ function buildHouse() {
     leaf.rotateY(-1.9);
     leaf.translate(-doorW / 2, 0.4 + 1.45, D / 2 - T / 2);
     parts.push(tint(leaf, WOOD));
-    parts.push(tint(move(new THREE.BoxGeometry(3.0, 0.24, 1.1), 0, 0.52, D / 2 + 0.6), STONE_DARK));
-    parts.push(tint(move(new THREE.BoxGeometry(3.6, 0.16, 1.4), 0, 0.32, D / 2 + 1.2), STONE_DARK)); // second step
+    parts.push(tint(move(new THREE.BoxGeometry(3.2, 0.5, 1.2), 0, 0.42, D / 2 + 0.6), STONE_DARK)); // threshold slab (lands at y≈0.02 after the drop)
     // Interior: an oil lamp on a wall shelf and a small framed image niche.
     parts.push(tint(move(new THREE.BoxGeometry(1.2, 0.08, 0.4), 0, 0.4 + 1.6, -D / 2 + T + 0.22), WOOD));
     parts.push(tint(move(new THREE.CylinderGeometry(0.12, 0.09, 0.1, 8), 0, 0.4 + 1.69, -D / 2 + T + 0.22), 0xb8742d));
@@ -430,7 +432,12 @@ function buildHouse() {
       parts.push(tint(move(new THREE.CylinderGeometry(0.35, 0.28, 0.7, 8), W / 2 - 0.8, 0.75, D / 2 + 0.9), 0xa25a3a));
       parts.push(tint(move(new THREE.SphereGeometry(0.4, 8, 6), W / 2 - 0.8, 1.35, D / 2 + 0.9), 0x3f7a2a, 0, 0x7fb552));
     }
-    return merge(parts);
+    // Everything above was authored on a 0.4 plinth; drop it so the floor is at y=0.
+    const g = merge(parts);
+    const pos = g.attributes.position;
+    for (let i = 0; i < pos.count; i++) if (pos.getY(i) > 0.3) pos.setY(i, pos.getY(i) - 0.4);
+    g.computeBoundingSphere();
+    return g;
   };
   return [lod(2), lod(1), lod(0)];
 }
@@ -441,7 +448,8 @@ function buildHut() {
     const R = 3.1, H = 2.9;
     const seg = detail ? 22 : 12;
     const gap = 0.42; // doorway half-angle, centred on +z
-    parts.push(tint(move(new THREE.CylinderGeometry(R + 0.25, R + 0.35, 0.3, seg), 0, 0.15, 0), STONE_DARK)); // floor slab
+    parts.push(tint(move(new THREE.CylinderGeometry(R + 0.25, R + 0.35, 0.3, seg), 0, -0.14, 0), STONE_DARK)); // floor slab, flush
+    parts.push(tint(move(new THREE.CylinderGeometry(R + 0.3, R + 0.45, 2.6, seg), 0, -1.5, 0), STONE_DARK, 0, 0x7d766b)); // foundation
     parts.push(tint(move(new THREE.CylinderGeometry(R, R + 0.05, H, seg, 1, true, gap, Math.PI * 2 - gap * 2), 0, 0.3 + H / 2, 0), PLASTER, 0, 0xd8b98a));
     parts.push(tint(move(new THREE.CylinderGeometry(R + 0.02, R + 0.07, 0.5, seg, 1, true, gap, Math.PI * 2 - gap * 2), 0, 0.55, 0), MUD_BAND));
     // Lintel over the doorway.
@@ -460,7 +468,12 @@ function buildHut() {
       toran(parts, 2.4, 0.3 + 2.6, R + 0.06, 9);
       parts.push(tint(move(new THREE.ConeGeometry(0.06, 0.2, 5), 1.1, 0.45, R + 0.4), FLAME, 2.2, 0xfff1c4));
     }
-    return merge(parts);
+    // Authored on a 0.3 slab; drop so the floor is at y=0 (foundation/slab untouched).
+    const g = merge(parts);
+    const pos = g.attributes.position;
+    for (let i = 0; i < pos.count; i++) if (pos.getY(i) > 0.2) pos.setY(i, pos.getY(i) - 0.3);
+    g.computeBoundingSphere();
+    return g;
   };
   return [lod(2), lod(1), lod(0)];
 }
