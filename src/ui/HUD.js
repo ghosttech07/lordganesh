@@ -7,6 +7,8 @@ import { chunkKeyToCoords } from '../world/ChunkManager.js';
 import { MODAK_COUNT } from '../modak/ModakSystem.js';
 import { damp } from '../core/MathUtils.js';
 
+const CANVAS_SCALE = 1.5;
+
 const _v = new THREE.Vector3();
 const _cc = [0, 0];
 const _dist = new Float32Array(MODAK_COUNT);
@@ -43,9 +45,12 @@ export class HUD {
     // Compass.
     const cw = el('div', 'hud-compass', this.root);
     this.compass = el('canvas', '', cw);
-    this.compass.width = 840;
-    this.compass.height = 68;
+    // Canvases draw in logical units at 1.5× backing so they stay crisp on
+    // 3× phone screens (the CSS size is a fraction of the backing size).
+    this.compass.width = 840 * CANVAS_SCALE;
+    this.compass.height = 68 * CANVAS_SCALE;
     this.cctx = this.compass.getContext('2d');
+    this.cctx.setTransform(CANVAS_SCALE, 0, 0, CANVAS_SCALE, 0, 0);
 
     // Hunt timer (competitive mode only).
     this.timer = el('div', 'hud-timer hidden', this.root);
@@ -56,9 +61,10 @@ export class HUD {
     // Minimap.
     const mm = el('div', 'hud-minimap', this.root);
     this.minimap = el('canvas', '', mm);
-    this.minimap.width = 300;
-    this.minimap.height = 300;
+    this.minimap.width = 300 * CANVAS_SCALE;
+    this.minimap.height = 300 * CANVAS_SCALE;
     this.mctx = this.minimap.getContext('2d');
+    this.mctx.setTransform(CANVAS_SCALE, 0, 0, CANVAS_SCALE, 0, 0);
     this.clock = el('div', 'hud-clock', this.root, '');
 
     // Edge indicators (pooled).
@@ -349,8 +355,8 @@ export class HUD {
 
   _drawCompass(pose, camera, modaks) {
     const ctx = this.cctx;
-    const W = this.compass.width;
-    const H = this.compass.height;
+    const W = this.compass.width / CANVAS_SCALE;
+    const H = this.compass.height / CANVAS_SCALE;
     ctx.clearRect(0, 0, W, H);
     // Camera heading (yaw), 0 = -Z = North.
     _v.set(0, 0, -1).applyQuaternion(camera.quaternion);
@@ -435,7 +441,7 @@ export class HUD {
 
   _drawMinimap(pose, camera, modaks, world) {
     const ctx = this.mctx;
-    const S = this.minimap.width;
+    const S = this.minimap.width / CANVAS_SCALE;
     ctx.clearRect(0, 0, S, S);
     const scale = S / (CHUNK_SIZE * 7); // ~7 chunks across
     const cx = S / 2;

@@ -2,7 +2,8 @@
 // events between world, player, modaks, questions, UI and audio.
 
 import * as THREE from 'three';
-import { Settings, QUALITY_PRESETS } from './core/Settings.js';
+import { Settings, QUALITY_PRESETS, resolvePixelRatio } from './core/Settings.js';
+import { ResolutionController } from './core/Resolution.js';
 import { detectDeviceTier } from './core/DeviceTier.js';
 import { createRenderer, Engine } from './core/Engine.js';
 import { Input } from './core/Input.js';
@@ -90,15 +91,19 @@ export class Game {
     this._showLoading(0, this.i18n.t('loading'));
 
     // Renderer, scene, camera.
-    this.renderer = await createRenderer(this.canvas, this.settings, this.quality);
+    const pixelRatio = resolvePixelRatio(this.settings, this.quality, this.device);
+    this.renderer = await createRenderer(this.canvas, this.settings, this.quality, pixelRatio);
     const simple = this.renderer.__kind === 'webgpu'; // experimental path: no GLSL features
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(65, 1, 0.3, 900);
     this.engine = new Engine(this.renderer, this.camera);
     this.engine.onResize = (w, h) => this.postfx?.setSize(w, h);
+    // Native-resolution rendering with an adaptive step-down: sharp by default,
+    // never a slideshow on a weaker phone.
+    this.resolution = new ResolutionController(this.engine, pixelRatio, 1);
 
     // Terrain PBR layers bake in a worker while the sky bakes on the GPU.
-    const texSize = this.quality.anisotropy >= 8 ? 1024 : 512;
+    const texSize = this.quality.anisotropy >= 4 ? 1024 : 512;
     const texturesPromise = simple ? Promise.resolve(null) : bakeTerrainTextures(this.seed, texSize);
     const ganeshaPromise = loadGaneshaGLB(); // 16 MB textured model; streams while the world bakes
 
@@ -266,6 +271,8 @@ export class Game {
         this.rig.setMouseScale(this.settings.get('mooshikaScale'));
       } else if (key === 'touchControls') {
         this._applyTouchMode();
+      } else if (key === 'resolution') {
+        this.resolution.setTarget(resolvePixelRatio(this.settings, this.quality, this.device));
       } else {
         this._applyInputSettings();
       }
@@ -295,6 +302,9 @@ export class Game {
     };
     document.addEventListener('visibilitychange', () => { if (document.hidden) saveIfPlaying(); });
     window.addEventListener('pagehide', saveIfPlaying);
+    // Browsers drop fullscreen when the app is backgrounded; the next tap in
+    // the world brings it back (a user gesture is required).
+    window.addEventListener('touchend', () => { if (this.state === STATE.PLAYING) this._enterFullscreenLandscape(); }, { passive: true });
     window.addEventListener('keydown', (e) => {
       if (e.code === 'KeyM' && this.state === STATE.PLAYING) this.audio.toggleMusic();
       if (e.code === 'F3') {
@@ -314,14 +324,31 @@ export class Game {
     if (!this.touch) return;
     const el = document.documentElement;
     const req = el.requestFullscreen || el.webkitRequestFullscreen;
-    try {
-      const p = req && !document.fullscreenElement ? req.call(el, { navigationUI: 'hide' }) : Promise.resolve();
-      Promise.resolve(p)
-        .then(() => screen.orientation?.lock?.('landscape'))
-        .catch(() => {});
-    } catch {
-      /* not supported — the rotate overlay still guides the player */
+    const already = document.fullscreenElement || document.webkitFullscreenElement;
+    const standalone = navigator.standalone === true || matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches;
+    if (standalone) return; // installed to the home screen: already full screen
+    if (!req) {
+      // iPhone Safari has no Fullscreen API for pages. The only true full
+      // screen there is "Add to Home Screen" (the manifest asks for fullscreen
+      // landscape) — tell the player once.
+      this._fullscreenHint();
+      return;
     }
+    if (already) return;
+    try {
+      Promise.resolve(req.call(el, { navigationUI: 'hide' }))
+        .then(() => screen.orientation?.lock?.('landscape').catch(() => {}))
+        .catch(() => this._fullscreenHint());
+    } catch {
+      this._fullscreenHint();
+    }
+  }
+  _fullscreenHint() {
+    if (this._fsHinted) return;
+    this._fsHinted = true;
+    const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (!ios) return;
+    this.menus.toast(this.i18n.t('addToHome'), 6000);
   }
 
   /** Touch buttons: on for any device that has a touch screen (or forced on/off in settings). */
@@ -583,6 +610,7 @@ export class Game {
 
   _frame(dt, alpha) {
     this.input.poll(dt);
+    if (this.state === STATE.PLAYING) this.resolution.update(dt, this.engine.stats.fps);
 
     if (this.input.pause) {
       if (this.state === STATE.PLAYING) this._pause();

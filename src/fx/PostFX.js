@@ -171,6 +171,7 @@ export class PostFX {
   }
 
   setSize(w, h) {
+    this.composer.setPixelRatio(this.renderer.getPixelRatio());
     this.composer.setSize(w, h);
   }
 

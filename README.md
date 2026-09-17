@@ -63,7 +63,11 @@ Requires a browser with WebGL 2 (every current desktop and mobile browser).
   itself while open.
 - The run is **saved on your device**; come back later and press *Continue*.
 - On phones the game plays **fullscreen in landscape**; rotate the device if
-  asked.
+  asked. iPhone Safari has no fullscreen mode for web pages: tap *Share →
+  Add to Home Screen* and open the game from there for true full screen.
+- Phones render at **native screen resolution** (sharp on 3× displays) with an
+  adaptive step-down if the frame rate drops; *Settings → Sharpness* overrides
+  it (`?res=1|1.5|2|native`).
 
 <p align="center">
   <img src="docs/screenshots/hunt-door.jpg" width="49%" alt="Modak Hunt at a village door" />

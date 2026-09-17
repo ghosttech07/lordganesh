@@ -11,7 +11,7 @@
   --display: 'Noto Serif Devanagari', 'Noto Sans', 'Noto Sans Devanagari', serif;
 }
 * { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; overflow: hidden; background: var(--deep); color: var(--cream); font-family: var(--font); -webkit-font-smoothing: antialiased; }
+html, body { margin: 0; height: 100%; height: 100dvh; overflow: hidden; background: var(--deep); color: var(--cream); font-family: var(--font); -webkit-font-smoothing: antialiased; }
 #game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; outline: none; }
 #ui { position: fixed; inset: 0; pointer-events: none; }
 #ui > * { pointer-events: auto; }
@@ -53,24 +53,44 @@ input, select { font: inherit; }
 .touch .stick { position: absolute; width: 128px; height: 128px; border-radius: 50%; border: 2px solid rgba(251,243,228,0.35); background: rgba(26,15,8,0.3); display: none; }
 .touch .stick .nub { position: absolute; width: 56px; height: 56px; left: 36px; top: 36px; border-radius: 50%; background: rgba(242,193,78,0.75); }
 .touch .btn { position: absolute; width: 72px; height: 72px; border-radius: 50%; border: 2px solid rgba(242,193,78,0.6); background: var(--glass); color: var(--gold); font-weight: 700; font-size: 13px; letter-spacing: 0.05em; pointer-events: auto; user-select: none; -webkit-user-select: none; }
-.touch .btn { width: 76px; height: 76px; font-size: 13px; }
+/* Touch layout scales with the shorter screen side so it fits a 320 px-tall
+   phone in landscape and a tablet alike; edges respect the notch/home bar. */
+:root {
+  --btn: clamp(50px, 16vmin, 78px);
+  --gap: clamp(8px, 2.4vmin, 14px);
+  --edge-r: calc(12px + env(safe-area-inset-right, 0px));
+  --edge-l: calc(12px + env(safe-area-inset-left, 0px));
+  --edge-b: calc(12px + env(safe-area-inset-bottom, 0px));
+  --edge-t: calc(10px + env(safe-area-inset-top, 0px));
+  --mm: clamp(64px, 19vmin, 120px);
+}
+.touch .btn { width: var(--btn); height: var(--btn); font-size: clamp(10px, 3.2vmin, 13px); }
 .touch .btn:active { background: rgba(242,193,78,0.35); }
-.touch .btn.sprint { right: 22px; bottom: 118px; }
-.touch .btn.leap { right: 112px; bottom: 36px; }
-.touch .btn.mount { right: 112px; bottom: 132px; font-size: 11px; }
-.touch .btn.view { right: 22px; bottom: 214px; width: 56px; height: 56px; font-size: 11px; }
-.touch .btn.pause { right: 22px; top: 190px; width: 48px; height: 48px; font-size: 16px; }
-@media (max-width: 700px) { .touch .btn.pause { top: 130px; } }
+.touch .btn.leap { right: calc(var(--edge-r) + var(--btn) + var(--gap)); bottom: var(--edge-b); }
+.touch .btn.sprint { right: var(--edge-r); bottom: calc(var(--edge-b) + var(--btn) + var(--gap)); }
+.touch .btn.mount { right: calc(var(--edge-r) + var(--btn) + var(--gap)); bottom: calc(var(--edge-b) + var(--btn) + var(--gap)); font-size: clamp(9px, 2.8vmin, 11px); }
+.touch .btn.view { right: calc(var(--edge-r) + (var(--btn) - var(--btn) * 0.74) / 2); bottom: calc(var(--edge-b) + 2 * (var(--btn) + var(--gap))); width: calc(var(--btn) * 0.74); height: calc(var(--btn) * 0.74); font-size: clamp(9px, 2.8vmin, 11px); }
+/* Pause sits beside the minimap, vertically centred on it. */
+.touch .btn.pause { right: calc(var(--edge-r) + var(--mm) + var(--gap)); top: calc(var(--edge-t) + (var(--mm) - var(--btn) * 0.6) / 2); width: calc(var(--btn) * 0.6); height: calc(var(--btn) * 0.6); font-size: clamp(12px, 4vmin, 16px); }
 .hud-prompt { position: absolute; bottom: 48px; left: 50%; transform: translateX(-50%); background: var(--glass); border: 1px solid rgba(242,193,78,0.35); color: var(--gold); padding: 8px 14px; border-radius: 10px; font-size: 13px; font-weight: 600; letter-spacing: 0.03em; pointer-events: none; }
 body.touch-device .touch .stick { display: block; }
 body.touch-device .hud-clock, body.touch-device .hud-hint { display: none; }
+body.touch-device .hud-minimap { width: var(--mm); height: var(--mm); right: var(--edge-r); top: var(--edge-t); }
+body.touch-device .hud-score { left: var(--edge-l); top: var(--edge-t); }
+body.touch-device .hud-score .value { font-size: clamp(22px, 9vmin, 42px); }
+body.touch-device .hud-stats { gap: clamp(8px, 3vmin, 18px); margin-top: clamp(4px, 1.6vmin, 10px); font-size: clamp(10px, 3.2vmin, 13px); }
+body.touch-device .hud-bonus { top: clamp(70px, 26vmin, 118px); left: var(--edge-l); font-size: clamp(16px, 5vmin, 22px); }
+body.touch-device .hud-compass { top: var(--edge-t); width: min(400px, 42vw); height: clamp(22px, 8vmin, 34px); }
+body.touch-device .hud-timer { top: calc(var(--edge-t) + clamp(26px, 9vmin, 40px)); font-size: clamp(20px, 7vmin, 30px); }
+body.touch-device .hud-prompt { bottom: calc(var(--edge-b) + clamp(28px, 10vmin, 48px)); font-size: clamp(11px, 3.4vmin, 13px); }
+body.touch-device .toast { top: calc(var(--edge-t) + clamp(40px, 14vmin, 60px)); max-width: min(560px, 80vw); text-align: center; }
 body:not(.touch-device) .touch { display: none; }
 
 /* ---------- Overlays ---------- */
 .overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: radial-gradient(ellipse at center, rgba(26,15,8,0.25), rgba(26,15,8,0.78)); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); animation: fade 0.25s ease-out; }
 .overlay.soft { background: radial-gradient(ellipse at center, rgba(26,15,8,0.05), rgba(26,15,8,0.45)); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
-.card { width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto; background: var(--glass-strong); border: 1px solid rgba(242,193,78,0.35); border-radius: 18px; padding: 26px 28px; box-shadow: 0 20px 60px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06); animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.card { width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 32px); max-height: calc(100dvh - 24px); overflow: auto; background: var(--glass-strong); border: 1px solid rgba(242,193,78,0.35); border-radius: 18px; padding: 26px 28px; box-shadow: 0 20px 60px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06); animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
 .card.wide { width: min(760px, calc(100vw - 32px)); }
 @keyframes rise { from { transform: translateY(14px); opacity: 0; } to { transform: none; opacity: 1; } }
 .card h1 { font-family: var(--display); font-weight: 600; font-size: 34px; margin: 0 0 6px; color: var(--gold); line-height: 1.15; }
@@ -194,4 +214,17 @@ table.lb tr.me { background: rgba(242,193,78,0.12); }
   .card { padding: 20px 18px; }
   .card h1 { font-size: 26px; }
   .hud-hint { display: none; }
+}
+/* Short landscape screens (phones): compact cards so questions fit without scrolling. */
+@media (max-height: 460px) {
+  .card { padding: 14px 16px; max-height: calc(100dvh - 16px); }
+  .card h1 { font-size: 22px; margin: 0 0 8px; }
+  .card.wide { width: min(760px, calc(100vw - 24px)); }
+  .qcard { width: min(640px, calc(100vw - 24px)); }
+  .qcard .qtext { font-size: 16px; margin-bottom: 10px; }
+  .qcard .qmeta { margin-bottom: 6px; }
+  .qcard .options { gap: 6px; grid-template-columns: 1fr 1fr; }
+  .qcard .opt { padding: 9px 12px; font-size: 14px; }
+  .tut-icon { font-size: 40px; }
+  .tut-body { font-size: 14px; line-height: 1.45; margin-bottom: 10px; }
 }

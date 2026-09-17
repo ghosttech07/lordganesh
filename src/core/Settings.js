@@ -1,6 +1,8 @@
 // Quality presets + persisted user settings.
 
 export const QUALITY_PRESETS = {
+  // pixelRatioCap is the desktop default; phones render at native pixel ratio
+  // (see resolvePixelRatio) with an adaptive step-down if the frame rate drops.
   low: {
     msaa: 0,
     name: 'Low',
@@ -11,14 +13,14 @@ export const QUALITY_PRESETS = {
     ao: false,
     bloom: true,
     godRays: false,
-    smaa: false,
+    smaa: true,
     grade: true,
     vegetationDensity: 0.35,
     cullScale: 2.2,
     terrainCastsShadow: false,
     propShadows: false,
     particles: 0.4,
-    anisotropy: 2,
+    anisotropy: 4,
   },
   medium: {
     msaa: 2,
@@ -83,6 +85,7 @@ const STORAGE_KEY = 'endless-modak.settings.v1';
 
 const DEFAULTS = {
   quality: 'auto',        // 'auto' | 'low' | 'medium' | 'high' | 'ultra'
+  resolution: 'auto',     // 'auto' | '1' | '1.5' | '2' | 'native' — render pixel ratio
   masterVolume: 0.8,
   musicVolume: 0.5,
   sfxVolume: 0.9,
@@ -108,6 +111,7 @@ export class Settings {
     if (url.has('debug')) this.data.debug = true;
     if (url.get('renderer') === 'webgpu') this.data.renderer = 'webgpu';
     if (url.has('quality')) this.data.quality = url.get('quality');
+    if (url.has('res')) this.data.resolution = url.get('res');
   }
 
   load() {
@@ -142,4 +146,16 @@ export class Settings {
     this.listeners.add(fn);
     return () => this.listeners.delete(fn);
   }
+}
+
+/** Render pixel ratio for this device: the 'resolution' setting, or native
+ *  on phones (a 1× render on a 3× screen is what "blurry on mobile" is) and
+ *  the preset cap on desktops. */
+export function resolvePixelRatio(settings, quality, device) {
+  const dpr = window.devicePixelRatio || 1;
+  const r = settings.get('resolution');
+  if (r === 'native') return dpr;
+  const n = parseFloat(r);
+  if (Number.isFinite(n) && n > 0) return Math.min(dpr, n);
+  return device?.isMobile ? Math.min(dpr, 3) : Math.min(dpr, quality.pixelRatioCap);
 }

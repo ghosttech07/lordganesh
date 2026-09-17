@@ -31,7 +31,9 @@ export function detectDeviceTier() {
   if (cores >= 8) score += 1;
   if (mem >= 8) score += 1;
   if (isMobile) score -= 2;
-  if (dpr >= 3 && isMobile) score -= 1;
+  // Recent phone GPUs (Apple A12+/M, Adreno 6xx–7xx, Mali-G7x, Immortalis,
+  // Xclipse) handle Medium — shadows, MSAA — at native resolution.
+  if (isMobile && /apple|adreno [67]|mali-g[67][0-9]|immortalis|xclipse/.test(g)) score += 1;
   if (/swiftshader|llvmpipe/.test(g)) score = 0;
 
   let tier;
@@ -39,6 +41,10 @@ export function detectDeviceTier() {
   else if (score >= 4) tier = 'high';
   else if (score >= 2) tier = 'medium';
   else tier = 'low';
+  // Resolution is chosen separately (native on phones, adaptive — see
+  // Settings.resolvePixelRatio), so the tier only decides effects, and
+  // High/Ultra effects are too much for a phone.
+  if (isMobile && (tier === 'high' || tier === 'ultra')) tier = 'medium';
 
   return { tier, gpu, isMobile, cores, mem, dpr, hasWebGPU: !!navigator.gpu };
 }

@@ -16,7 +16,7 @@ import * as THREE from 'three';
 export const FIXED_DT = 1 / 60;
 const MAX_STEPS = 5;
 
-export async function createRenderer(canvas, settings, quality) {
+export async function createRenderer(canvas, settings, quality, pixelRatio) {
   const wantWebGPU = settings.get('renderer') === 'webgpu' && !!navigator.gpu;
   if (wantWebGPU) {
     try {
@@ -24,7 +24,7 @@ export async function createRenderer(canvas, settings, quality) {
       const r = new mod.WebGPURenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
       await r.init();
       r.__kind = 'webgpu';
-      configure(r, quality);
+      configure(r, quality, pixelRatio);
       return r;
     } catch (err) {
       console.warn('WebGPU init failed, falling back to WebGL2:', err);
@@ -38,12 +38,12 @@ export async function createRenderer(canvas, settings, quality) {
     depth: true,
   });
   r.__kind = 'webgl2';
-  configure(r, quality);
+  configure(r, quality, pixelRatio);
   return r;
 }
 
-function configure(r, quality) {
-  r.setPixelRatio(Math.min(window.devicePixelRatio || 1, quality.pixelRatioCap));
+function configure(r, quality, pixelRatio) {
+  r.setPixelRatio(pixelRatio || Math.min(window.devicePixelRatio || 1, quality.pixelRatioCap));
   r.shadowMap.enabled = quality.shadows;
   r.shadowMap.type = THREE.PCFShadowMap;
   // Shadow maps are rendered exactly once per frame (see Engine._frame), not
@@ -82,6 +82,13 @@ export class Engine {
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) this.lastTime = 0;
     });
+    this.resize();
+  }
+
+  /** Change the render pixel ratio live (resolution setting / adaptive). */
+  setPixelRatio(pr) {
+    if (Math.abs(this.renderer.getPixelRatio() - pr) < 1e-3) return;
+    this.renderer.setPixelRatio(pr);
     this.resize();
   }
 

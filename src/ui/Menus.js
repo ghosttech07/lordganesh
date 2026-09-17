@@ -216,6 +216,10 @@ export class Menus {
                 <option value="auto"${q === 'auto' ? ' selected' : ''}>${t.t('auto')}${this.deviceInfo ? ` (${QUALITY_PRESETS[this.deviceInfo.tier].name})` : ''}</option>
                 ${Object.entries(QUALITY_PRESETS).map(([k, v]) => `<option value="${k}"${q === k ? ' selected' : ''}>${v.name}</option>`).join('')}
               </select></div>
+            <div class="field"><label>${t.t('resolution')}</label>
+              <select class="resolution">
+                ${[['auto', 'resAuto'], ['1', 'resPerf'], ['1.5', 'resBal'], ['native', 'resSharp']].map(([v, l]) => `<option value="${v}"${String(s.get('resolution')) === v ? ' selected' : ''}>${t.t(l)}</option>`).join('')}
+              </select></div>
             <div class="field"><label>${t.t('renderer')}</label>
               <select class="renderer">
                 <option value="webgl"${s.get('renderer') === 'webgl' ? ' selected' : ''}>WebGL 2</option>
@@ -254,6 +258,10 @@ export class Menus {
     el.querySelector('.quality').addEventListener('change', (e) => {
       s.set('quality', e.target.value);
       this.handlers.settingsChanged?.('quality');
+    });
+    el.querySelector('.resolution').addEventListener('change', (e) => {
+      s.set('resolution', e.target.value);
+      this.handlers.settingsChanged?.('resolution');
     });
     el.querySelector('.renderer').addEventListener('change', (e) => {
       s.set('renderer', e.target.value);
