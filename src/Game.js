@@ -35,7 +35,7 @@ import { PuzzleCard } from './ui/PuzzleCard.js';
 import { Menus } from './ui/Menus.js';
 
 const STATE = { LOADING: 0, MENU: 1, PLAYING: 2, QUESTION: 3, PAUSED: 4, SUMMARY: 5 };
-const HUNT_SECONDS = 5 * 60;
+const HUNT_SECONDS = 0; // 0 = untimed: the hunt runs until the player ends it
 
 function bakeTerrainTextures(seed, size) {
   return new Promise((resolve, reject) => {
@@ -305,8 +305,8 @@ export class Game {
     }
     this.modaks.frozenIndex = -1;
     this.modaks.populate(this.controller.x, this.controller.z, this.camera);
-    this.huntLeft = mode === 'hunt' ? HUNT_SECONDS : 0;
-    this.hud.setTimer(mode === 'hunt' ? this.huntLeft : null);
+    this.huntLeft = mode === 'hunt' && HUNT_SECONDS > 0 ? HUNT_SECONDS : 0;
+    this.hud.setTimer(this.huntLeft > 0 ? this.huntLeft : null);
     this.score.reset();
     this.hud.displayScore = 0;
     this.questions.missed.length = 0;
@@ -505,8 +505,8 @@ export class Game {
       this.puzzle.gamepadConfirm();
     }
 
-    // Modak Hunt clock: runs while playing or answering; ends the run at zero.
-    if (this.mode === 'hunt' && (this.state === STATE.PLAYING || this.state === STATE.QUESTION)) {
+    // Modak Hunt clock (only when a time limit is configured): ends the run at zero.
+    if (this.mode === 'hunt' && HUNT_SECONDS > 0 && (this.state === STATE.PLAYING || this.state === STATE.QUESTION)) {
       this.huntLeft -= dt;
       this.hud.setTimer(this.huntLeft);
       if (this.huntLeft <= 0) {

@@ -336,7 +336,7 @@ export class Menus {
     const el = this._render(
       'summary',
       `<div class="card">
-        <h1>${mode === 'hunt' ? t.t('huntOver') + ' — ' : ''}${t.t('runSummary')}</h1>
+        <h1>${t.t('runSummary')}</h1>
         <div class="grid2" style="margin-bottom:8px">
           <div><div class="meta" style="margin:0">${t.t('score')}</div><div style="font-family:var(--display);font-size:40px;color:var(--gold)">${score.score}</div></div>
           <div class="stack" style="gap:4px;font-size:14px">

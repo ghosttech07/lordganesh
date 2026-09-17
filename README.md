@@ -145,9 +145,10 @@ pooled modaks, pooled HUD indicators.
 
 ### Modak Hunt (competitive mode) and puzzles
 
-* **Two modes** from the main menu: *Free Journey* (no clock) and **Modak
-  Hunt** — a 5-minute timed run on the day's shared seed. The HUD shows the
-  clock; at zero the run ends and the score is submitted tagged `mode: hunt`.
+* **Two modes** from the main menu: *Free Journey* and **Modak Hunt** — the
+  competitive run on the day's shared seed, untimed: play at your own pace and
+  end the run from the pause menu to submit, tagged `mode: hunt`. (A time
+  limit can be re-enabled by setting `HUNT_SECONDS` in `Game.js`.)
   The leaderboard has a "Hunt only" toggle (default on) and ranks within the
   mode; the daily board is the competition.
 * **Hidden modaks**: a share of the twelve (25 % free, 42 % hunt) spawn *inside*
