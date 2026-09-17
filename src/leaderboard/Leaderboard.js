@@ -16,11 +16,28 @@ const QUEUE_KEY = 'endless-modak.pending.v1';
 const CACHE_TTL_MS = 60_000;
 const FETCH_TIMEOUT_MS = 8000;
 
-function withTimeout(promise, ms) {
-  return new Promise((resolve, reject) => {
-    const t = setTimeout(() => reject(new Error('timeout')), ms);
-    promise.then((v) => { clearTimeout(t); resolve(v); }, (e) => { clearTimeout(t); reject(e); });
-  });
+/** fetch with a hard deadline that also aborts the request and covers reading
+ *  the body (a stalled mobile connection can hang either half). Resolves to a
+ *  Response-like object whose body is already read. */
+async function fetchWithTimeout(url, opts, ms) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  try {
+    const res = await fetch(url, { ...opts, signal: ctrl.signal });
+    const text = await res.text();
+    return {
+      ok: res.ok,
+      status: res.status,
+      statusText: res.statusText,
+      headers: res.headers,
+      text: async () => text,
+      json: async () => JSON.parse(text),
+    };
+  } catch (e) {
+    throw e?.name === 'AbortError' ? new Error('timeout') : e;
+  } finally {
+    clearTimeout(t);
+  }
 }
 
 export class LocalAdapter {
@@ -80,7 +97,7 @@ export class SupabaseAdapter {
   async claimName(name, secret) {
     // Fast path: one Postgres call through PostgREST. Falls back to the Edge Function.
     try {
-      const res = await withTimeout(fetch(`${this.url}/rest/v1/rpc/claim_name`, { method: 'POST', headers: this._headers(), body: JSON.stringify({ p_name: name, p_secret: secret }) }), FETCH_TIMEOUT_MS);
+      const res = await fetchWithTimeout(`${this.url}/rest/v1/rpc/claim_name`, { method: 'POST', headers: this._headers(), body: JSON.stringify({ p_name: name, p_secret: secret }) }, FETCH_TIMEOUT_MS);
       if (res.ok) {
         const j = await res.json();
         return j.ok ? { ok: true, name: j.name } : { ok: false, reason: j.reason || 'invalid' };
@@ -90,7 +107,7 @@ export class SupabaseAdapter {
     }
     let res;
     try {
-      res = await withTimeout(fetch(`${this.url}/functions/v1/claim-name`, { method: 'POST', headers: this._headers(), body: JSON.stringify({ name, secret }) }), FETCH_TIMEOUT_MS);
+      res = await fetchWithTimeout(`${this.url}/functions/v1/claim-name`, { method: 'POST', headers: this._headers(), body: JSON.stringify({ name, secret }) }, FETCH_TIMEOUT_MS);
     } catch {
       return { ok: false, reason: 'offline' };
     }
@@ -105,7 +122,7 @@ export class SupabaseAdapter {
     // Fast path: one Postgres call. The function validates, checks the secret,
     // rate-limits and inserts atomically. Falls back to the Edge Function.
     try {
-      const res = await withTimeout(fetch(`${this.url}/rest/v1/rpc/submit_score`, { method: 'POST', headers: this._headers(), body: JSON.stringify({ p: payload, p_secret: secret }) }), FETCH_TIMEOUT_MS);
+      const res = await fetchWithTimeout(`${this.url}/rest/v1/rpc/submit_score`, { method: 'POST', headers: this._headers(), body: JSON.stringify({ p: payload, p_secret: secret }) }, FETCH_TIMEOUT_MS);
       if (res.ok) {
         const j = await res.json();
         if (j.ok) return { ok: true };
@@ -115,7 +132,7 @@ export class SupabaseAdapter {
     } catch {
       /* fall through */
     }
-    const res = await withTimeout(fetch(`${this.url}/functions/v1/submit-score`, { method: 'POST', headers: this._headers(), body: JSON.stringify(row) }), FETCH_TIMEOUT_MS);
+    const res = await fetchWithTimeout(`${this.url}/functions/v1/submit-score`, { method: 'POST', headers: this._headers(), body: JSON.stringify(row) }, FETCH_TIMEOUT_MS);
     if (res.ok) return { ok: true };
     const text = await res.text().catch(() => res.statusText);
     return { ok: false, reason: text || res.statusText, retry: res.status === 429 || res.status >= 500 };
@@ -126,10 +143,7 @@ export class SupabaseAdapter {
     let filter = `&mode=eq.${mode}`;
     if (board === 'daily') filter += `&day=eq.${now.toISOString().slice(0, 10)}`;
     if (board === 'weekly') filter += `&week=eq.${weekKey(now)}`;
-    const res = await withTimeout(
-      fetch(`${this.url}/rest/v1/${view}?select=*&order=score.desc,created_at.asc&limit=${limit}${filter}`, { headers: { ...this._headers(), Prefer: 'count=exact' } }),
-      FETCH_TIMEOUT_MS
-    );
+    const res = await fetchWithTimeout(`${this.url}/rest/v1/${view}?select=*&order=score.desc,created_at.asc&limit=${limit}${filter}`, { headers: { ...this._headers(), Prefer: 'count=exact' } }, FETCH_TIMEOUT_MS);
     if (!res.ok) throw new Error(`leaderboard fetch failed: ${res.status}`);
     const rows = await res.json();
     const range = res.headers.get('content-range') || '';
@@ -137,10 +151,7 @@ export class SupabaseAdapter {
     return { rows, total: Number.isFinite(total) ? total : rows.length };
   }
   async rank(nameKey, board, mode) {
-    const res = await withTimeout(
-      fetch(`${this.url}/rest/v1/rpc/player_rank`, { method: 'POST', headers: this._headers(), body: JSON.stringify({ p_name_key: nameKey, p_board: board, p_mode: mode }) }),
-      FETCH_TIMEOUT_MS
-    );
+    const res = await fetchWithTimeout(`${this.url}/rest/v1/rpc/player_rank`, { method: 'POST', headers: this._headers(), body: JSON.stringify({ p_name_key: nameKey, p_board: board, p_mode: mode }) }, FETCH_TIMEOUT_MS);
     if (!res.ok) return { rank: -1, total: 0, best: null };
     const [row] = await res.json();
     return row && row.best !== null ? { rank: Number(row.rank), total: Number(row.total), best: row.best } : { rank: -1, total: Number(row?.total || 0), best: null };

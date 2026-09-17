@@ -448,7 +448,7 @@ export class Game {
     if (!this.touch) this.canvas.requestPointerLock?.();
   }
 
-  async _endRun() {
+  _endRun() {
     this.menus.close();
     this.state = STATE.SUMMARY;
     this.controller.inputEnabled = false;
@@ -457,15 +457,15 @@ export class Game {
     this.hud.setVisible(false);
     this.hud.setTimer(null);
     const payload = this.score.toSubmission(this.identity.claimed ? this.identity.name : this.settings.get('playerName') || 'Bhakta', this.seed, this.mode);
-    let result;
-    try {
-      result = await this.leaderboard.submit(payload, this.identity.secret);
-    } catch (err) {
-      result = { ok: false, reason: String(err.message || err) };
-    }
     RunSave.clear();
     this.menus.savedRun = null;
-    this.menus.showSummary(this.score, result, this.mode);
+    // The summary shows at once; the upload reports back into it when it lands
+    // (a slow phone connection must never leave the player on a blank screen).
+    const shown = this.menus.showSummary(this.score, { pending: true }, this.mode);
+    Promise.resolve()
+      .then(() => this.leaderboard.submit(payload, this.identity.secret))
+      .catch((err) => ({ ok: false, reason: String(err?.message || err) }))
+      .then((result) => this.menus.updateSummaryStatus(shown, result));
   }
 
   // -------------------------------------------------------------- modaks

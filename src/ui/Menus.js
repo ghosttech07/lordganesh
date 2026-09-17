@@ -418,7 +418,7 @@ export class Menus {
             <div>${t.t('duration')}: <b>${fmtDuration(score.playDurationSec)}</b></div>
           </div>
         </div>
-        <div class="meta">${submitResult.ok ? t.t('submitted') : submitResult.queued ? t.t('queued') : `${t.t('rejected')}: ${escapeHtml(submitResult.reason || '')}`}</div>
+        <div class="meta submit-status">${this._submitStatus(submitResult)}</div>
         <div class="divider"></div>
         <div class="stack">
           <button class="btn-primary again">${t.t('playAgain')}</button>
@@ -432,6 +432,22 @@ export class Menus {
     el.querySelector('.again').addEventListener('click', () => this.handlers.play?.(mode));
     el.querySelector('.lb').addEventListener('click', () => this._push('leaderboard'));
     el.querySelector('.rv').addEventListener('click', () => this._push('review'));
+    const token = (this._summaryToken = (this._summaryToken || 0) + 1);
+    return token;
+  }
+  _submitStatus(r) {
+    const t = this.i18n;
+    if (r.pending) return t.t('submitting');
+    if (r.ok) return t.t('submitted');
+    if (r.queued) return t.t('queued');
+    return `${t.t('rejected')}: ${escapeHtml(r.reason || '')}`;
+  }
+  /** Fill in the upload result on the summary that `token` came from — if the
+   *  player has already moved on, there is nothing to update. */
+  updateSummaryStatus(token, result) {
+    if (this.screen !== 'summary' || token !== this._summaryToken) return;
+    const el = this.overlay.querySelector('.submit-status');
+    if (el) el.innerHTML = this._submitStatus(result);
   }
 
   toast(msg, ms = 2200) {
