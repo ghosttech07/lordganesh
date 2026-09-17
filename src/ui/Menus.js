@@ -66,15 +66,34 @@ export class Menus {
   }
   _back() {
     const prev = this.stack.pop();
-    if (prev) this._open(prev);
-    else this.close();
+    if (prev) {
+      this._open(prev);
+    } else if (this._lastSummary) {
+      this._open('summary');
+    } else if (this.screen !== 'main') {
+      this._open('main');
+    } else {
+      this.close();
+    }
   }
   _open(name) {
-    if (name === 'main') this.showMain();
-    else if (name === 'pause') this.showPause();
-    else if (name === 'settings') this.showSettings();
-    else if (name === 'leaderboard') this.showLeaderboard();
-    else if (name === 'review') this.showReview();
+    if (name === 'main') {
+      if (this.handlers.mainMenu) this.handlers.mainMenu();
+      else this.showMain();
+    } else if (name === 'pause') {
+      this.showPause();
+    } else if (name === 'settings') {
+      this.showSettings();
+    } else if (name === 'leaderboard') {
+      this.showLeaderboard();
+    } else if (name === 'review') {
+      this.showReview();
+    } else if (name === 'summary' && this._lastSummary) {
+      this.showSummary(this._lastSummary.score, this._lastSummary.submitResult, this._lastSummary.mode);
+    } else {
+      if (this.handlers.mainMenu) this.handlers.mainMenu();
+      else this.showMain();
+    }
   }
 
   showMain() {
@@ -385,13 +404,17 @@ export class Menus {
           missed.length === 0
             ? `<div class="meta">${t.t('noMissed')}</div>`
             : missed
-                .map(
-                  (m) => `<div class="review-item">
-                    <div class="q">${escapeHtml(m.q.q)}</div>
-                    <div class="a">${t.t('youAnswered')}: <span class="you">${escapeHtml(m.chosen)}</span> · ${t.t('correctAnswer')}: <b>${escapeHtml(m.q.o[m.q.a])}</b></div>
-                    <div class="why">${escapeHtml(m.q.why)}</div>
-                  </div>`
-                )
+                .map((m) => {
+                  const qText = m?.q?.q || '';
+                  const chosenText = m?.chosen || '';
+                  const correctText = m?.q?.o && m?.q?.a != null ? m.q.o[m.q.a] : '';
+                  const whyText = m?.q?.why || '';
+                  return `<div class="review-item">
+                    <div class="q">${escapeHtml(qText)}</div>
+                    <div class="a">${t.t('youAnswered')}: <span class="you">${escapeHtml(chosenText)}</span> · ${t.t('correctAnswer')}: <b>${escapeHtml(correctText)}</b></div>
+                    ${whyText ? `<div class="why">${escapeHtml(whyText)}</div>` : ''}
+                  </div>`;
+                })
                 .join('')
         }
         </div>
@@ -405,6 +428,17 @@ export class Menus {
   showSummary(score, submitResult, mode = 'free') {
     const t = this.i18n;
     if (mode === 'hunt') this.lbHunt = true;
+    this._lastSummary = {
+      score: {
+        score: score.score,
+        modaks: score.modaks,
+        accuracy: score.accuracy,
+        longestStreak: score.longestStreak,
+        playDurationSec: score.playDurationSec
+      },
+      submitResult,
+      mode
+    };
     const el = this._render(
       'summary',
       `<div class="card">
@@ -426,12 +460,17 @@ export class Menus {
             <button class="btn-ghost lb">${t.t('leaderboard')}</button>
             <button class="btn-ghost rv">${t.t('review')}</button>
           </div>
+          <button class="btn-ghost menu" style="margin-top:2px">${t.t('mainMenu')}</button>
         </div>
       </div>`
     );
     el.querySelector('.again').addEventListener('click', () => this.handlers.play?.(mode));
     el.querySelector('.lb').addEventListener('click', () => this._push('leaderboard'));
     el.querySelector('.rv').addEventListener('click', () => this._push('review'));
+    el.querySelector('.menu').addEventListener('click', () => {
+      if (this.handlers.mainMenu) this.handlers.mainMenu();
+      else this.showMain();
+    });
     const token = (this._summaryToken = (this._summaryToken || 0) + 1);
     return token;
   }
@@ -445,6 +484,7 @@ export class Menus {
   /** Fill in the upload result on the summary that `token` came from — if the
    *  player has already moved on, there is nothing to update. */
   updateSummaryStatus(token, result) {
+    if (this._lastSummary) this._lastSummary.submitResult = result;
     if (this.screen !== 'summary' || token !== this._summaryToken) return;
     const el = this.overlay.querySelector('.submit-status');
     if (el) el.innerHTML = this._submitStatus(result);

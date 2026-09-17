@@ -259,6 +259,7 @@ export class Game {
     });
     m.on('resume', () => this._resume());
     m.on('endRun', () => this._endRun());
+    m.on('mainMenu', () => this._enterMenu());
     m.on('settingsChanged', (key) => {
       if (key === 'quality' || key === 'renderer') {
         m.toast('Reloading to apply…');
@@ -383,6 +384,7 @@ export class Game {
 
   _startRun(mode = 'free') {
     this.menus.close();
+    this.menus._lastSummary = null;
     const saved = mode === 'continue' ? RunSave.load() : null;
     if (mode === 'continue') mode = saved ? saved.mode : 'free';
     this.mode = mode;
