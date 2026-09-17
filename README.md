@@ -17,8 +17,8 @@ teaches something real. There is no losing: a wrong answer only means
 
 ## Play
 
-- **Web:** deployed from this repository on Vercel (import the repo, preset
-  *Vite*) — see [Deploying](#deploying).
+- **Web:** **<https://lordganesh-ochre.vercel.app/>** — desktop or phone, no
+  install. Everyone plays the same daily world and one global leaderboard.
 - **Locally:**
 
   ```bash
