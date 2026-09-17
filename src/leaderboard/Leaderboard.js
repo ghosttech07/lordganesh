@@ -227,7 +227,7 @@ export class Leaderboard {
     const key = `${board}:${mode}`;
     const cached = this.cache.get(key);
     let data;
-    if (cached && Date.now() - cached.at < CACHE_TTL_MS) {
+    if (cached && !opts.force && Date.now() - cached.at < CACHE_TTL_MS) {
       data = cached.data;
     } else if (this.inflight.has(key)) {
       data = await this.inflight.get(key);

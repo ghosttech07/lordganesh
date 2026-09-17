@@ -96,10 +96,16 @@ export class HUD {
     mkBtn('leap', 'LEAP', 'leap');
     mkBtn('pause', 'II', 'pause');
     this.mountBtn = mkBtn('mount', i18n.t('btnOff'), 'mount');
+    mkBtn('view', 'CAM', 'view');
+    this.touch = false;
 
     // Context prompt (mount / dismount / call).
     this.prompt = el('div', 'hud-prompt hidden', this.root, '');
     this._promptText = '';
+
+    // Portrait guard on touch devices: play is landscape only.
+    this.rotate = el('div', 'rotate-overlay', root);
+    this.rotate.innerHTML = `<div class="phone">📱</div><div class="msg">${i18n.t('rotateDevice')}</div>`;
 
     // Debug overlay.
     this.debug = el('div', 'debug hidden', this.root, '');
@@ -122,8 +128,9 @@ export class HUD {
     this.scoreLabel.textContent = t.t('score');
     this.modakStat.firstChild.textContent = `${t.t('modaks')} `;
     this.streakStat.firstChild.textContent = `${t.t('streak')} `;
-    this.hint.textContent = t.t('controlsHelp');
+    this.hint.textContent = this.touch ? t.t('touchHelp') : t.t('controlsHelp');
     this.timerLabel.textContent = t.t('timeLeft');
+    this.rotate.querySelector('.msg').textContent = t.t('rotateDevice');
   }
 
   setVisible(v) {
@@ -223,10 +230,18 @@ export class HUD {
     this.debug.classList.toggle('hidden', !v);
   }
 
+  setTouch(on) {
+    this.touch = on;
+    this.hint.textContent = on ? this.i18n.t('touchHelp') : this.i18n.t('controlsHelp');
+    this._promptText = ''; // re-render prompt for the device
+  }
+
   /** Mount context: 'mounted' | 'near' | 'far' | 'indoors' | null. */
   setMountPrompt(state) {
     const t = this.i18n;
-    const text = state === 'mounted' ? t.t('getOff') : state === 'near' ? t.t('ride') : state === 'far' ? t.t('callMount') : state === 'indoors' ? t.t('waitsOutside') : state === 'coming' ? t.t('coming') : state === 'deep' ? t.t('tooDeep') : '';
+    let text = state === 'mounted' ? t.t('getOff') : state === 'near' ? t.t('ride') : state === 'far' ? t.t('callMount') : state === 'indoors' ? t.t('waitsOutside') : state === 'coming' ? t.t('coming') : state === 'deep' ? t.t('tooDeep') : '';
+    // On touch the key hint "E ·" means nothing; point at the button instead.
+    if (this.touch && text.startsWith('E ·')) text = text.replace('E ·', state === 'mounted' ? t.t('btnOff') + ' ·' : t.t('btnRide') + ' ·');
     if (text !== this._promptText) {
       this._promptText = text;
       this.prompt.textContent = text;

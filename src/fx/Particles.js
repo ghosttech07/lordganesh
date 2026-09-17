@@ -202,18 +202,7 @@ export class ParticleSystems {
       );
     }
 
-    // Dust kicked up by feet at run/sprint speeds.
-    if (rig.footstepEvent >= 0 && ctrl.grounded && ctrl.speed > 8 && ctrl.surface !== 2) {
-      const n = ctrl.speed > 18 ? 5 : 3;
-      for (let i = 0; i < n; i++) {
-        this.dust.emit(
-          ctrl.x + (Math.random() - 0.5) * 0.8, ctrl.y + 0.15, ctrl.z + (Math.random() - 0.5) * 0.8,
-          -Math.sin(ctrl.yaw) * 1.5 + (Math.random() - 0.5) * 1.2, 1.2 + Math.random(), -Math.cos(ctrl.yaw) * 1.5 + (Math.random() - 0.5) * 1.2,
-          0.7 + Math.random() * 0.5, 14 + Math.random() * 12,
-          0.76, 0.66, 0.5
-        );
-      }
-    }
+    // (Foot dust removed by request — the pool stays allocated but idle.)
 
     // Incense smoke at nearby shrines (rescan every 2 s — shrines don't move).
     this._shrineScan -= dt;

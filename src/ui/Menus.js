@@ -42,9 +42,18 @@ export class Menus {
     this.overlay.innerHTML = '';
     this.screen = null;
     this.stack.length = 0;
+    this._stopAutoRefresh();
+  }
+
+  _stopAutoRefresh() {
+    if (this._refreshTimer) {
+      clearInterval(this._refreshTimer);
+      this._refreshTimer = null;
+    }
   }
 
   _render(name, html) {
+    if (name !== 'leaderboard') this._stopAutoRefresh();
     this.screen = name;
     this.overlay.innerHTML = html;
     this.overlay.classList.remove('hidden');
@@ -91,14 +100,18 @@ export class Menus {
             <button class="btn-ghost how">${t.t('howToPlay')}</button>
           </div>
         </div>
+        <div class="divider"></div>
+        <div class="top-players"><div class="meta">${t.t('topPlayers')} · ${t.t('loading')}</div></div>
         <div class="meta">${t.t('dailyWorld')} · ${t.t('seed')} <code>${this.seed}</code><br>${t.t('controlsHelp')}</div>
       </div>`
     );
+    this._fillTopPlayers(el.querySelector('.top-players'));
     const input = el.querySelector('.name');
     const status = el.querySelector('.namestatus');
     input.addEventListener('input', () => this.settings.set('playerName', input.value.trim()));
     // Claim the name (globally unique) before a run can start.
     const start = async (mode) => {
+      this.handlers.beforePlay?.(); // synchronous, inside the tap: fullscreen + orientation lock
       const want = input.value.trim() || 'Bhakta';
       if (!this.identity) return this.handlers.play?.(mode);
       status.textContent = t.t('checking');
@@ -134,6 +147,29 @@ export class Menus {
     el.querySelector('.st').addEventListener('click', () => this._push('settings'));
   }
 
+  /** Names from the database, shown automatically on the main menu (today's board, all modes). */
+  async _fillTopPlayers(box) {
+    const t = this.i18n;
+    const me = this.identity?.name || this.settings.get('playerName');
+    let daily, all;
+    try {
+      [daily, all] = await Promise.all([
+        this.leaderboard.fetch('daily', { playerName: me, force: true }),
+        this.leaderboard.fetch('alltime', { playerName: me }),
+      ]);
+    } catch {
+      box.innerHTML = '';
+      return;
+    }
+    if (this.screen !== 'main' || !box.isConnected) return;
+    const list = (daily.rows.length ? daily : all).rows.slice(0, 5);
+    const label = daily.rows.length ? t.t('daily') : t.t('allTime');
+    box.innerHTML = `<div class="meta" style="margin:0 0 6px">${t.t('topPlayers')} · ${label} · ${all.total} ${t.t('playersCount')}</div>` +
+      (list.length
+        ? `<div class="top-list">${list.map((r, i) => `<span class="${r.name === me ? 'me' : ''}"><b>${i + 1}</b> ${escapeHtml(r.name)} <em>${r.score}</em></span>`).join('')}</div>`
+        : `<div class="meta">${t.t('noScores')}</div>`);
+  }
+
   showPause() {
     const t = this.i18n;
     const el = this._render(
@@ -153,7 +189,10 @@ export class Menus {
         </div>
       </div>`
     );
-    el.querySelector('.resume').addEventListener('click', () => this.handlers.resume?.());
+    el.querySelector('.resume').addEventListener('click', () => {
+      this.handlers.beforePlay?.();
+      this.handlers.resume?.();
+    });
     el.querySelector('.lb').addEventListener('click', () => this._push('leaderboard'));
     el.querySelector('.rv').addEventListener('click', () => this._push('review'));
     el.querySelector('.st').addEventListener('click', () => this._push('settings'));
@@ -200,6 +239,10 @@ export class Menus {
             <div class="field"><label>${t.t('mouseSens')}</label><input type="range" min="0.2" max="3" step="0.05" data-key="mouseSensitivity" value="${s.get('mouseSensitivity')}"></div>
             <div class="field"><label>${t.t('padSens')}</label><input type="range" min="0.2" max="3" step="0.05" data-key="gamepadSensitivity" value="${s.get('gamepadSensitivity')}"></div>
             <div class="field"><div class="check"><input type="checkbox" class="invert"${s.get('invertY') ? ' checked' : ''}><label>${t.t('invertY')}</label></div></div>
+            <div class="field"><label>${t.t('touchControls')}</label>
+              <select class="touchctl">
+                ${['auto', 'on', 'off'].map((v) => `<option value="${v}"${s.get('touchControls') === v ? ' selected' : ''}>${t.t(v === 'auto' ? 'optAuto' : v === 'on' ? 'optOn' : 'optOff')}</option>`).join('')}
+              </select></div>
             <div class="field"><label>${t.t('mooshikaSize')}</label><input type="range" min="0.4" max="1.2" step="0.02" data-key="mooshikaScale" value="${s.get('mooshikaScale')}"></div>
           </div>
         </div>
@@ -229,6 +272,10 @@ export class Menus {
         s.set(r.dataset.key, parseFloat(r.value));
         this.handlers.settingsChanged?.(r.dataset.key);
       });
+    });
+    el.querySelector('.touchctl').addEventListener('change', (e) => {
+      s.set('touchControls', e.target.value);
+      this.handlers.settingsChanged?.('touchControls');
     });
     el.querySelector('.invert').addEventListener('change', (e) => {
       s.set('invertY', e.target.checked);
@@ -282,15 +329,24 @@ export class Menus {
     });
     el.querySelector('.back').addEventListener('click', () => this._back());
 
-    const me = this.settings.get('playerName');
+    const me = this.identity?.name || this.settings.get('playerName');
+    this._stopAutoRefresh();
+    this._refreshTimer = setInterval(() => {
+      if (this.screen === 'leaderboard' && !document.hidden) this._refreshBoard(el, me, true);
+    }, 15000);
+    await this._refreshBoard(el, me, true);
+  }
+
+  async _refreshBoard(el, me, force) {
+    const t = this.i18n;
     let data;
     try {
-      data = await this.leaderboard.fetch(this.lbBoard, { friendsOnly: this.lbFriends, playerName: me, mode: this.lbHunt ? 'hunt' : null });
+      data = await this.leaderboard.fetch(this.lbBoard, { friendsOnly: this.lbFriends, playerName: me, mode: this.lbHunt ? 'hunt' : null, force });
     } catch (err) {
       el.querySelector('.lb-wrap').innerHTML = `<div class="meta">${String(err.message || err)}</div>`;
       return;
     }
-    if (this.screen !== 'leaderboard') return;
+    if (this.screen !== 'leaderboard' || !el.isConnected) return;
     const wrap = el.querySelector('.lb-wrap');
     if (data.rows.length === 0) {
       wrap.innerHTML = `<div class="meta">${t.t('noScores')}</div>`;
@@ -305,7 +361,7 @@ export class Menus {
           .join('')}
         </tbody></table>`;
     }
-    el.querySelector('.rank').textContent = data.playerRank > 0 ? `${t.t('yourRank')}: #${data.playerRank} / ${data.total}` : '';
+    el.querySelector('.rank').textContent = (data.playerRank > 0 ? `${t.t('yourRank')}: #${data.playerRank} / ${data.total}` : `${data.total} ${t.t('playersCount')}`) + ` · ${t.t('liveRefresh')}`;
   }
 
   showReview() {

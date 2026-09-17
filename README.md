@@ -1,4 +1,4 @@
-# Mooshika & the Endless Modak
+# Ganesh & Unlimited Modak
 
 A 3D open-world collection game (this is the root project of `mushak-dash`; the earlier Babylon.js runner is archived untouched in `_legacy/`). Ride with Ganesha on Mooshika across an
 infinite, procedurally generated world; reach a glowing modak, answer a
@@ -132,6 +132,16 @@ pooled modaks, pooled HUD indicators.
   wet clearcoated eyes and nose. The procedural Ganesha (fallback) uses skin
   with wrinkle normals, brushed clearcoated gold, silk with gold sheen, ivory
   and ruby; the shipped Ganesha is the textured GLB described below.
+
+### Mobile
+
+* Touch controls appear on any device with a touch screen (Settings → Touch
+  controls: Auto / On / Off): joystick on the left, drag to look on the
+  right, RUN · LEAP · RIDE/GET OFF · CAM · pause buttons.
+* Play is landscape only: starting or resuming a run requests fullscreen and
+  locks landscape where the browser allows (Android); in portrait a "rotate
+  your device" screen covers the game. A web-app manifest makes the
+  home-screen install fullscreen + landscape.
 
 ### First run, and coming back
 

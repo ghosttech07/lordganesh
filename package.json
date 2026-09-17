@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Mooshika & the Endless Modak — a 3D open-world collection game",
+  "description": "Ganesh & Unlimited Modak — a 3D open-world collection game",
   "scripts": {
     "dev": "vite --host",
     "build": "vite build",

@@ -161,6 +161,7 @@ export class Input {
     if (name === 'sprint') this._touch.sprint = down;
     if (name === 'leap' && down) this._leapEdge = true;
     if (name === 'mount' && down) this._mountEdge = true;
+    if (name === 'view' && down) this._viewToggleEdge = true;
     if (name === 'pause' && down) this._pauseEdge = true;
   }
 

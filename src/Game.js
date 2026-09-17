@@ -77,7 +77,7 @@ export class Game {
     this.i18n = new I18n(this.settings);
     document.documentElement.lang = this.i18n.lang;
     this.device = detectDeviceTier();
-    if (this.device.isMobile) document.body.classList.add('touch-device');
+    this._applyTouchMode();
 
     const qKey = this.settings.get('quality') === 'auto' ? this.device.tier : this.settings.get('quality');
     this.quality = QUALITY_PRESETS[qKey] || QUALITY_PRESETS.medium;
@@ -144,6 +144,7 @@ export class Game {
 
     // UI.
     this.hud = new HUD(this.uiRoot, this.i18n, this.input);
+    this.hud.setTouch(this.touch);
     this.hud.setVisible(false);
     this.hud.setDebug(this.settings.get('debug'));
     this.card = new QuestionCard(this.uiRoot, this.i18n, this.audio);
@@ -245,6 +246,7 @@ export class Game {
       }
       this._startRun(mode || 'free');
     });
+    m.on('beforePlay', () => this._enterFullscreenLandscape());
     m.on('howToPlay', () => {
       const wasPaused = this.state === STATE.PAUSED;
       this.menus.close();
@@ -262,6 +264,8 @@ export class Game {
         this.audio.applyVolumes();
       } else if (key === 'mooshikaScale') {
         this.rig.setMouseScale(this.settings.get('mooshikaScale'));
+      } else if (key === 'touchControls') {
+        this._applyTouchMode();
       } else {
         this._applyInputSettings();
       }
@@ -299,6 +303,34 @@ export class Game {
         this.hud.setDebug(this.settings.get('debug'));
       }
     });
+  }
+
+  /**
+   * On touch devices the game plays fullscreen in landscape. Must be called
+   * from a user gesture. Orientation lock is only honoured in fullscreen on
+   * Android; iOS ignores it, so a "rotate your device" overlay covers portrait.
+   */
+  _enterFullscreenLandscape() {
+    if (!this.touch) return;
+    const el = document.documentElement;
+    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+    try {
+      const p = req && !document.fullscreenElement ? req.call(el, { navigationUI: 'hide' }) : Promise.resolve();
+      Promise.resolve(p)
+        .then(() => screen.orientation?.lock?.('landscape'))
+        .catch(() => {});
+    } catch {
+      /* not supported — the rotate overlay still guides the player */
+    }
+  }
+
+  /** Touch buttons: on for any device that has a touch screen (or forced on/off in settings). */
+  _applyTouchMode() {
+    const pref = this.settings.get('touchControls');
+    const hasTouch = navigator.maxTouchPoints > 0 || 'ontouchstart' in window;
+    this.touch = pref === 'on' || (pref === 'auto' && (hasTouch || this.device.isMobile));
+    document.body.classList.toggle('touch-device', this.touch);
+    if (this.hud) this.hud.setTouch(this.touch);
   }
 
   _applyInputSettings() {
@@ -364,7 +396,7 @@ export class Game {
     this.hud.setDim(false);
     this.audio.start();
     this.audio.resume();
-    if (!this.device.isMobile) this.canvas.requestPointerLock?.();
+    if (!this.touch) this.canvas.requestPointerLock?.();
   }
 
   _pause() {
@@ -386,7 +418,7 @@ export class Game {
     this.cameraRig.enabled = true;
     this.input.enabled = true;
     this.hud.setDim(false);
-    if (!this.device.isMobile) this.canvas.requestPointerLock?.();
+    if (!this.touch) this.canvas.requestPointerLock?.();
   }
 
   async _endRun() {
@@ -471,7 +503,7 @@ export class Game {
     this.state = STATE.PLAYING;
     this.controller.inputEnabled = true;
     this.hud.setDim(false);
-    if (!this.device.isMobile) this.canvas.requestPointerLock?.();
+    if (!this.touch) this.canvas.requestPointerLock?.();
   }
 
   // -------------------------------------------------------------- loop
