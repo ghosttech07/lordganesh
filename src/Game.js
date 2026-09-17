@@ -32,6 +32,7 @@ import { I18n } from './ui/i18n.js';
 import { HUD } from './ui/HUD.js';
 import { QuestionCard } from './ui/QuestionCard.js';
 import { PuzzleCard } from './ui/PuzzleCard.js';
+import { MatchCard } from './ui/MatchCard.js';
 import { Menus } from './ui/Menus.js';
 
 const STATE = { LOADING: 0, MENU: 1, PLAYING: 2, QUESTION: 3, PAUSED: 4, SUMMARY: 5 };
@@ -145,6 +146,7 @@ export class Game {
     this.hud.setDebug(this.settings.get('debug'));
     this.card = new QuestionCard(this.uiRoot, this.i18n, this.audio);
     this.puzzle = new PuzzleCard(this.uiRoot, this.i18n, this.audio);
+    this.match = new MatchCard(this.uiRoot, this.i18n, this.audio);
     this.mode = 'free';
     this.huntLeft = 0;
     this.menus = new Menus(this.uiRoot, this.i18n, this.settings, this.leaderboard, this.audio);
@@ -253,6 +255,8 @@ export class Game {
     this.card.onClose = (correct) => this._afterQuestion(correct);
     this.puzzle.onAnswer = (correct, answer) => this._onPuzzleAnswer(correct, answer);
     this.puzzle.onClose = (correct) => this._afterQuestion(correct);
+    this.match.onAnswer = (correct, answer) => { this.questions.answerMatch(this.presentation, correct, answer); this._applyAnswer(correct); };
+    this.match.onClose = (correct) => this._afterQuestion(correct);
 
     // Audio must start on a user gesture; the first click/key anywhere does it.
     const gesture = () => {
@@ -298,7 +302,7 @@ export class Game {
     this.mode = mode;
     if (!this.controller.mounted) this._mount();
     // Hunt: more modaks hide indoors and the clock runs; re-seat every modak.
-    this.modaks.hiddenFraction = mode === 'hunt' ? 0.42 : 0.25;
+    this.modaks.hiddenFraction = mode === 'hunt' ? 0.5 : 0.4;
     for (const m of this.modaks.modaks) {
       m.active = false;
       m.group.visible = false;
@@ -373,10 +377,16 @@ export class Game {
     this.input.releasePointer();
     this.hud.setDim(true);
     this.audio.uiTick();
-    // Hidden (indoor) modaks pose an arrange-in-order puzzle; open ones a question.
+    // Indoor modaks pose a puzzle (arrange-in-order or match-the-pairs);
+    // open ones a question (multiple choice or fill-the-blank shloka).
     if (this.modaks.modaks[index].hidden) {
-      this.presentation = this.questions.nextPuzzle(this.score.score);
-      this.puzzle.show(this.presentation);
+      if (Math.random() < 0.5) {
+        this.presentation = this.questions.nextMatch(this.score.score);
+        this.match.show(this.presentation);
+      } else {
+        this.presentation = this.questions.nextPuzzle(this.score.score);
+        this.puzzle.show(this.presentation);
+      }
     } else {
       this.presentation = this.questions.next(this.score.score);
       this.card.show(this.presentation);
@@ -487,6 +497,7 @@ export class Game {
 
   _mountPromptState() {
     const c = this.controller;
+    if (c.tooDeep) return 'deep';
     if (c.mounted) return 'mounted';
     if (this.world.isIndoors(c.x, c.z)) return 'indoors';
     if (this.mountAI.distanceTo(c.x, c.z) < MOUNT_RANGE) return 'near';
@@ -503,6 +514,7 @@ export class Game {
     if (this.input.confirm && this.state === STATE.QUESTION) {
       this.card.gamepadConfirm();
       this.puzzle.gamepadConfirm();
+      this.match.gamepadConfirm();
     }
 
     // Modak Hunt clock (only when a time limit is configured): ends the run at zero.
@@ -513,6 +525,7 @@ export class Game {
         if (this.state === STATE.QUESTION) {
           this.card.hide();
           this.puzzle.hide();
+          this.match.hide();
           this.modaks.frozenIndex = -1;
         }
         this._endRun();
@@ -560,6 +573,7 @@ export class Game {
 
     this.card.update(dt);
     this.puzzle.update(dt);
+    this.match.update(dt);
     if (this.state !== STATE.MENU && this.state !== STATE.SUMMARY) {
       const st = this.settings.get('debug') ? this._debugStats() : null;
       this.hud.update(dt, this.score, _pose, this.camera, this.modaks, this.world, this.sky, st);

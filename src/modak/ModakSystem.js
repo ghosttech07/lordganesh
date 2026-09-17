@@ -205,7 +205,7 @@ export class ModakSystem {
     this.frozenIndex = -1; // modak currently in question flow
     this.spawnedTotal = 0;
     // Share of modaks hidden inside shelters. Raised in Modak Hunt mode.
-    this.hiddenFraction = 0.25;
+    this.hiddenFraction = 0.4;
     this._shelters = new Float32Array(96 * 4);
     this._shelterCount = 0;
     this._shelterCb = this._onShelter.bind(this);

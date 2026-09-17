@@ -20,7 +20,7 @@ export class Menus {
     this.handlers = {}; // play, resume, quit, endRun, settingsChanged
     this.lbBoard = 'daily';
     this.lbFriends = false;
-    this.lbHunt = true;
+    this.lbHunt = false; // show every player by default; 'Hunt only' narrows
     this.deviceInfo = null;
     this.questionSystem = null;
     this.score = null;

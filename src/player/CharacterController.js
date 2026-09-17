@@ -29,8 +29,9 @@ export const MOVE = {
   playerRadius: 0.62,
   // On foot (Ganesha dismounted, gliding on his lotus): calmer, narrower.
   foot: { walk: 3.2, run: 6.5, sprint: 9.5, leapVelocity: 6.5, radius: 0.5 },
-  swimSpeedScale: 0.45,
-  wadeSpeedScale: 0.7,
+  swimSpeedScale: 0.7,
+  wadeSpeedScale: 0.8,
+  maxDepth: 2.6, // deeper water is a soft boundary: you're turned back toward shore
 };
 
 export const SURFACE = { GRASS: 0, STONE: 1, WATER: 2 };
@@ -83,6 +84,8 @@ export class CharacterController {
     // Riding Mooshika. On foot, speeds drop and doorways open up: door
     // blockers (the mount can't go indoors) are only consulted while mounted.
     this.mounted = true;
+    this.tooDeep = false; // true while the deep-water boundary is holding you back
+    this._drift = [0, 0];
   }
 
   /** Place the character on the ground at (x, z). */
@@ -213,7 +216,28 @@ export class CharacterController {
     nx = this._cx;
     nz = this._cz;
 
-    const ground = this.field.heightAt(nx, nz);
+    // Deep-water boundary. Lakes and seas can be tens of metres deep; past
+    // maxDepth the move is refused unless it brings you shallower, and if you
+    // are already out there you drift toward the nearest rise until you're
+    // back in wading depth. Nobody gets marooned mid-lake.
+    let ground = this.field.heightAt(nx, nz);
+    const depthNow = WATER_LEVEL - this.field.heightAt(this.x, this.z);
+    const depthNext = WATER_LEVEL - ground;
+    this.tooDeep = false;
+    if (depthNext > MOVE.maxDepth && depthNext >= depthNow - 0.01) {
+      this.tooDeep = true;
+      nx = this.x;
+      nz = this.z;
+      if (depthNow > MOVE.maxDepth) {
+        // Drift uphill (toward shallower water) at a gentle pace.
+        this.field.gradientAt(this.x, this.z, this._drift, 6);
+        const gl = Math.hypot(this._drift[0], this._drift[1]) || 1;
+        nx += (this._drift[0] / gl) * 3.0 * dt;
+        nz += (this._drift[1] / gl) * 3.0 * dt;
+      }
+      ground = this.field.heightAt(nx, nz);
+      this.speed = Math.min(this.speed, 2);
+    }
     this.groundY = ground;
 
     if (!this.grounded) {

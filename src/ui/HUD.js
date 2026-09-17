@@ -226,7 +226,7 @@ export class HUD {
   /** Mount context: 'mounted' | 'near' | 'far' | 'indoors' | null. */
   setMountPrompt(state) {
     const t = this.i18n;
-    const text = state === 'mounted' ? t.t('getOff') : state === 'near' ? t.t('ride') : state === 'far' ? t.t('callMount') : state === 'indoors' ? t.t('waitsOutside') : state === 'coming' ? t.t('coming') : '';
+    const text = state === 'mounted' ? t.t('getOff') : state === 'near' ? t.t('ride') : state === 'far' ? t.t('callMount') : state === 'indoors' ? t.t('waitsOutside') : state === 'coming' ? t.t('coming') : state === 'deep' ? t.t('tooDeep') : '';
     if (text !== this._promptText) {
       this._promptText = text;
       this.prompt.textContent = text;

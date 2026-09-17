@@ -12,6 +12,9 @@ npm run dev        # http://localhost:3003
 npm run build      # dist/
 ```
 
+Play online: **https://ghosttech07.github.io/lordganesh/** (built and
+published from `main` by `.github/workflows/deploy.yml`).
+
 ## Controls
 
 | Action        | Keyboard / mouse         | Gamepad            | Touch                       |
@@ -151,10 +154,13 @@ pooled modaks, pooled HUD indicators.
   limit can be re-enabled by setting `HUNT_SECONDS` in `Game.js`.)
   The leaderboard has a "Hunt only" toggle (default on) and ranks within the
   mode; the daily board is the competition.
-* **Hidden modaks**: a share of the twelve (25 % free, 42 % hunt) spawn *inside*
+* **Hidden modaks**: a share of the twelve (40 % free, 50 % hunt) spawn *inside*
   houses, huts and caves. They have no beam; their edge indicator shows "?"
   and a distance rounded to 25 m, and the compass tick is hollow. You walk in
   through the door to find them.
+* **Challenge types**: open modaks pose multiple-choice questions or
+  fill-the-blank shlokas (`fillblanks.json`); indoor modaks pose an
+  arrange-in-order puzzle or a match-the-pairs set (`matches.json`).
 * **Puzzles**: hidden modaks pose an arrange-in-order puzzle (`puzzles.json`,
   20 sequences: mantras, shlokas, story order, Ashtavinayak yatra, the eight
   avatars, puja steps…). Tap chips into order (number keys work), submit;
@@ -203,7 +209,10 @@ a mesh that was never rigged. Delete the GLB and the procedural figure returns.
 
 ### Leaderboard, unique names, and load
 
-Default is a per-browser local board. To enable the global board:
+The global board is on by default: `src/leaderboard/config.js` carries the
+public project URL and anon key (a public key by design — RLS and the Edge
+Functions govern what it can do), so every build, including the GitHub Pages
+deploy, shares one leaderboard. To point at your own project:
 
 1. Create a Supabase project, run `supabase/schema.sql`.
 2. Deploy both Edge Functions: `supabase functions deploy claim-name` and

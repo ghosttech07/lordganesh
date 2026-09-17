@@ -8,6 +8,7 @@
 
 import { validateSubmission, dailySeed, weekKey } from './validate.js';
 import { localClaim } from './Identity.js';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
 
 const LOCAL_KEY = 'endless-modak.scores.v1';
 const FRIENDS_KEY = 'endless-modak.friends.v1';
@@ -125,8 +126,8 @@ export class SupabaseAdapter {
 
 export class Leaderboard {
   constructor() {
-    const url = import.meta.env?.VITE_SUPABASE_URL;
-    const key = import.meta.env?.VITE_SUPABASE_ANON_KEY;
+    const url = SUPABASE_URL;
+    const key = SUPABASE_ANON_KEY;
     this.adapter = url && key ? new SupabaseAdapter(url, key) : new LocalAdapter();
     this.backend = url && key ? 'supabase' : 'local';
     this.cache = new Map();     // key → { at, data }

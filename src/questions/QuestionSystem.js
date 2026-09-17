@@ -4,6 +4,8 @@
 
 import bank from './questions.json';
 import puzzleBank from './puzzles.json';
+import fillBank from './fillblanks.json';
+import matchBank from './matches.json';
 import { mulberry32 } from '../core/MathUtils.js';
 
 const TIERS = {
@@ -23,6 +25,9 @@ export class QuestionSystem {
     this.rand = mulberry32(seed >>> 0);
     this.byDiff = { 1: [], 2: [], 3: [] };
     for (const q of bank) this.byDiff[q.diff].push(q);
+    // Fill-in-the-blank shlokas share the multiple-choice card; they get their
+    // own category label and a distinct id space so review entries stay clear.
+    for (const f of fillBank) this.byDiff[f.diff].push({ ...f, id: 10000 + f.id, cat: 'fillblank' });
     this.queues = { 1: [], 2: [], 3: [] };
     this.asked = new Set();
     this.missed = []; // {q, chosen} for the review screen
@@ -31,6 +36,49 @@ export class QuestionSystem {
     for (const d of [1, 2, 3]) this._refill(d);
     this.puzzleQueue = [];
     this._refillPuzzles();
+    this.matchQueue = [];
+    this._refillMatches();
+  }
+
+  _refillMatches() {
+    const arr = matchBank.slice();
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = (this.rand() * (i + 1)) | 0;
+      const t = arr[i];
+      arr[i] = arr[j];
+      arr[j] = t;
+    }
+    this.matchQueue = arr;
+  }
+
+  /** Next match-the-pairs set; right column pre-shuffled. */
+  nextMatch(score) {
+    if (this.matchQueue.length === 0) this._refillMatches();
+    const tier = tierForScore(score);
+    const want = tier === 'easy' ? 1 : tier === 'mixed' ? 2 : 3;
+    let idx = this.matchQueue.findIndex((m) => m.diff === want);
+    if (idx < 0) idx = this.matchQueue.length - 1;
+    const m = this.matchQueue.splice(idx, 1)[0];
+    const left = m.pairs.map((p) => p[0]);
+    const answerFor = m.pairs.map((p) => p[1]);
+    let right;
+    do {
+      right = answerFor.slice();
+      for (let i = right.length - 1; i > 0; i--) {
+        const j = (this.rand() * (i + 1)) | 0;
+        const t = right[i];
+        right[i] = right[j];
+        right[j] = t;
+      }
+    } while (right.every((v, i) => v === answerFor[i]));
+    this.totalAsked++;
+    return { kind: 'match', id: m.id, diff: m.diff, title: m.title, left, right, answerFor, why: m.why, raw: m };
+  }
+
+  answerMatch(p, correct, answer) {
+    if (correct) this.totalCorrect++;
+    else this.missed.push({ q: { q: `${p.title}: match the pairs`, o: [p.left.map((l, i) => `${l} → ${p.answerFor[i]}`).join(' · ')], a: 0, why: p.why }, chosen: answer.join(' · ') });
+    return correct;
   }
 
   _refillPuzzles() {

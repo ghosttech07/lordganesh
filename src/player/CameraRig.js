@@ -13,6 +13,7 @@
 import * as THREE from 'three';
 import { clamp, damp, dampAngle, lerp, shortestAngle, smoothstep } from '../core/MathUtils.js';
 import { MOVE } from './CharacterController.js';
+import { WATER_LEVEL } from '../world/WorldConfig.js';
 
 const _look = { x: 0, y: 0 };
 const _dir = new THREE.Vector3();
@@ -172,7 +173,7 @@ export class CameraRig {
     _dir.set(Math.sin(this.yaw) * cp, Math.sin(this.pitch), Math.cos(this.yaw) * cp);
     _pos.copy(this.pivot).addScaledVector(_dir, this.arm);
     // Never let the eye itself dip under the terrain.
-    const floor = this.field.heightAt(_pos.x, _pos.z) + 0.35;
+    const floor = Math.max(this.field.heightAt(_pos.x, _pos.z) + 0.35, WATER_LEVEL + 0.45);
     if (_pos.y < floor) _pos.y = floor;
     this.camera.position.copy(_pos);
     this.camera.lookAt(this.pivot);
